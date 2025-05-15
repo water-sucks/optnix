@@ -22,13 +22,13 @@ their values, just like `nix repl`, but better.
 
 A _module system_ is a Nix library that allows you to configure a set of exposed
 _options_. All the systems mentioned above allow you to configure their
-respective options with your own values. 
+respective options with your own values.
 
 While this can be a powerful paradigm for modeling any configuration system,
 these options can be rather hard to discover. Some of these options are found
 through web interfaces (like https://search.nixos.org), but many options can
-remain out of sight without reading source code, such as external module
-options or external module systems.
+remain out of sight without reading source code, such as external module options
+or external module systems.
 
 More information on how module systems work can be found on
 [nix.dev](https://nix.dev/tutorials/module-system/index.html).

@@ -1,0 +1,9 @@
+# Nix/direnv
+/result*
+/.direnv/
+
+# Binary destination from `make`
+/optnix
+
+# For bubbletea log files
+*.log

@@ -1,11 +1,7 @@
 package main
 
-import (
-	"fmt"
-
-	buildOpts "github.com/water-sucks/optnix/internal/build"
-)
+import "github.com/water-sucks/optnix/cmd"
 
 func main() {
-	fmt.Printf("optnix version %v\n", buildOpts.Version)
+	cmd.Execute()
 }

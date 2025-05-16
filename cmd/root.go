@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	buildOpts "github.com/water-sucks/optnix/internal/build"
 	cmdUtils "github.com/water-sucks/optnix/internal/cmd/utils"
+	"github.com/water-sucks/optnix/internal/logger"
 )
 
 const helpTemplate = `Usage:{{if .Runnable}}
@@ -46,10 +48,11 @@ type CmdOptions struct {
 
 func MainCommand() *cobra.Command {
 	opts := CmdOptions{}
+	cmdCtx := context.Background()
 
-	// TODO: init logger
+	log := logger.NewLogger()
 
-	// TODO: load configurations
+	cmdCtx = logger.WithLogger(cmdCtx, log)
 
 	cmd := cobra.Command{
 		Use:   "optnix [SCOPE] [OPTION]",
@@ -103,7 +106,7 @@ func MainCommand() *cobra.Command {
 		},
 	}
 
-	// TODO: init with context
+	cmd.SetContext(cmdCtx)
 
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.SetUsageTemplate(helpTemplate)
@@ -124,6 +127,10 @@ func MainCommand() *cobra.Command {
 }
 
 func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
+	log := logger.FromContext(cmd.Context())
+
+	log.Infof("starting command with scope '%v' and option input '%v'", opts.Scope, opts.OptionInput)
+
 	return nil
 }
 

@@ -1,0 +1,79 @@
+package config
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/providers/file"
+)
+
+type Config struct {
+	MinScore     int64 `koanf:"min_score"`
+	DebounceTime int64 `koanf:"debounce_time"`
+
+	Scopes map[string]Scope `koanf:"scopes"`
+}
+
+type Scope struct {
+	Description     string `koanf:"description"`
+	OptionsListFile string `koanf:"options-list-file"`
+	OptionsListCmd  string `koanf:"options-list-cmd"`
+	EvaluatorCmd    string `koanf:"evaluator"`
+}
+
+func NewConfig() *Config {
+	return &Config{
+		MinScore:     1,
+		DebounceTime: 25,
+
+		Scopes: make(map[string]Scope),
+	}
+}
+
+func ParseConfig(location ...string) (*Config, error) {
+	k := koanf.New(".")
+
+	for _, loc := range location {
+		if _, err := os.Stat(loc); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+
+			return nil, err
+		}
+
+		if err := k.Load(file.Provider(loc), toml.Parser()); err != nil {
+			return nil, err
+		}
+	}
+
+	cfg := NewConfig()
+
+	err := k.Unmarshal("", cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+var DefaultConfigLocations = []string{
+	"/etc/optnix/config.toml",
+	// User config path filled in by init(), depending on `XDG_CONFIG_HOME` presence
+}
+
+func init() {
+	var homeDirPath string
+	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
+		homeDirPath = filepath.Join(xdgConfigHome, "optnix", "config.toml")
+	} else if home := os.Getenv("HOME"); home != "" {
+		homeDirPath = filepath.Join(home, ".config", "optnix", "config.toml")
+	}
+
+	if homeDirPath != "" {
+		DefaultConfigLocations = append(DefaultConfigLocations, homeDirPath)
+	}
+}

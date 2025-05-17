@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	buildOpts "github.com/water-sucks/optnix/internal/build"
 	cmdUtils "github.com/water-sucks/optnix/internal/cmd/utils"
+	"github.com/water-sucks/optnix/internal/config"
 	"github.com/water-sucks/optnix/internal/logger"
 )
 
@@ -51,7 +53,6 @@ func MainCommand() *cobra.Command {
 	cmdCtx := context.Background()
 
 	log := logger.NewLogger()
-
 	cmdCtx = logger.WithLogger(cmdCtx, log)
 
 	cmd := cobra.Command{
@@ -63,7 +64,6 @@ func MainCommand() *cobra.Command {
 			argc := len(args)
 
 			if argc == 0 {
-				// TODO: maybe add additional scopes as a hint here?
 				return cmdUtils.ArgParseError{Msg: "missing required argument [SCOPE]"}
 			}
 			opts.Scope = args[0]
@@ -97,7 +97,20 @@ func MainCommand() *cobra.Command {
 			DisableDefaultCmd: true,
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: load configurations passed on command line, and MinScore
+			configLocations := append(config.DefaultConfigLocations, opts.Config...)
+
+			cfg, err := config.ParseConfig(configLocations...)
+			if err != nil {
+				log.Errorf("failed to parse config: %v", err)
+				return err
+			}
+
+			if opts.MinScore != 0 {
+				cfg.MinScore = opts.MinScore
+			}
+
+			cmdCtx = config.WithConfig(cmd.Context(), cfg)
+			cmd.SetContext(cmdCtx)
 
 			return nil
 		},
@@ -128,8 +141,12 @@ func MainCommand() *cobra.Command {
 
 func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
 	log := logger.FromContext(cmd.Context())
+	cfg := config.FromContext(cmd.Context())
+
+	bytes, _ := json.MarshalIndent(cfg, "", " ")
 
 	log.Infof("starting command with scope '%v' and option input '%v'", opts.Scope, opts.OptionInput)
+	log.Infof("config: %v", string(bytes))
 
 	return nil
 }

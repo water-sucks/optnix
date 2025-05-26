@@ -1,0 +1,44 @@
+package option
+
+import (
+	"encoding/json"
+	"io"
+)
+
+type NixosOption struct {
+	Name         string            `json:"name"`
+	Description  string            `json:"description"`
+	Type         string            `json:"type"`
+	Default      *NixosOptionValue `json:"default"`
+	Example      *NixosOptionValue `json:"example"`
+	Location     []string          `json:"loc"`
+	ReadOnly     bool              `json:"readOnly"`
+	Declarations []string          `json:"declarations"`
+}
+
+type NixosOptionValue struct {
+	Type string `json:"_type"`
+	Text string `json:"text"`
+}
+
+type NixosOptionSource []NixosOption
+
+func (o NixosOptionSource) String(i int) string {
+	return o[i].Name
+}
+
+func (o NixosOptionSource) Len() int {
+	return len(o)
+}
+
+func LoadOptions(r io.Reader) (NixosOptionSource, error) {
+	var options []NixosOption
+
+	d := json.NewDecoder(r)
+	err := d.Decode(&options)
+	if err != nil {
+		return nil, err
+	}
+
+	return options, nil
+}

@@ -7,3 +7,6 @@
 
 # For bubbletea log files
 *.log
+
+# Ignore any sample .toml files used for configuration
+/*.toml

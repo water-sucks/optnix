@@ -1,17 +1,21 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/fatih/color"
+	"github.com/google/shlex"
 	"github.com/spf13/cobra"
 	buildOpts "github.com/water-sucks/optnix/internal/build"
 	cmdUtils "github.com/water-sucks/optnix/internal/cmd/utils"
 	"github.com/water-sucks/optnix/internal/config"
 	"github.com/water-sucks/optnix/internal/logger"
+	"github.com/water-sucks/optnix/option"
 )
 
 const helpTemplate = `Usage:{{if .Runnable}}
@@ -114,8 +118,10 @@ func MainCommand() *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return CommandMain(cmd, &opts)
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := CommandMain(cmd, &opts); err != nil {
+				os.Exit(1)
+			}
 		},
 	}
 
@@ -139,14 +145,85 @@ func MainCommand() *cobra.Command {
 	return &cmd
 }
 
+func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, error) {
+	argv, err := shlex.Split(commandStr)
+	if err != nil {
+		return nil, fmt.Errorf("malformed command: %w", err)
+	}
+
+	var stdout bytes.Buffer
+
+	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd.Stdout = &stdout
+
+	err = cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	var l option.NixosOptionSource
+	err = json.Unmarshal(stdout.Bytes(), &l)
+	if err != nil {
+		return nil, err
+	}
+
+	return l, nil
+}
+
 func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
 
-	bytes, _ := json.MarshalIndent(cfg, "", " ")
+	var scope *config.Scope
+	for s, v := range cfg.Scopes {
+		if s == opts.Scope {
+			scope = &v
+			break
+		}
+	}
 
-	log.Infof("starting command with scope '%v' and option input '%v'", opts.Scope, opts.OptionInput)
-	log.Infof("config: %v", string(bytes))
+	if scope == nil {
+		err := fmt.Errorf("scope '%v' not found in configuration", opts.Scope)
+		log.Errorf("%v", err)
+		return err
+	}
+
+	var optionsList option.NixosOptionSource
+
+	if scope.OptionsListFile != "" {
+		optionsFile, err := os.Open(scope.OptionsListFile)
+		if err != nil {
+			log.Errorf("failed to open options file: %v", err)
+		} else {
+			defer func() { _ = optionsFile.Close() }()
+
+			l, err := option.LoadOptions(optionsFile)
+			if err != nil {
+				log.Errorf("failed to load options using file strategy: %v", err)
+				log.Info("attempting to load using command strategy instead")
+			} else {
+				optionsList = l
+			}
+		}
+	}
+
+	if len(optionsList) == 0 && scope.OptionsListCmd != "" {
+		l, err := runGenerateOptionListCmd(scope.OptionsListCmd)
+		if err != nil {
+			log.Errorf("failed to run options cmd: %v", err)
+			return err
+		}
+
+		optionsList = l
+	}
+
+	if optionsList == nil {
+		err := fmt.Errorf("no options found through all strategies for scope '%v'", opts.Scope)
+		log.Errorf("%v", err)
+		return err
+	}
+
+	log.Infof("options list length: %v", len(optionsList))
 
 	return nil
 }

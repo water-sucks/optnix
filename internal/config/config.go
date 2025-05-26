@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -52,12 +53,25 @@ func ParseConfig(location ...string) (*Config, error) {
 
 	cfg := NewConfig()
 
-	err := k.Unmarshal("", cfg)
-	if err != nil {
+	if err := k.Unmarshal("", cfg); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) Validate() error {
+	for s, v := range c.Scopes {
+		if v.OptionsListCmd == "" && v.OptionsListFile == "" {
+			return fmt.Errorf("no option list source defined for scope %v", s)
+		}
+	}
+
+	return nil
 }
 
 var DefaultConfigLocations = []string{

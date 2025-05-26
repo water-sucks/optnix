@@ -58,10 +58,6 @@ func ParseConfig(location ...string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	return cfg, nil
 }
 
@@ -69,6 +65,19 @@ func (c *Config) Validate() error {
 	for s, v := range c.Scopes {
 		if v.OptionsListCmd == "" && v.OptionsListFile == "" {
 			return fmt.Errorf("no option list source defined for scope %v", s)
+		}
+	}
+
+	if c.DefaultScope != "" {
+		foundScope := false
+		for k := range c.Scopes {
+			if k == c.DefaultScope {
+				foundScope = true
+				break
+			}
+		}
+		if !foundScope {
+			return fmt.Errorf("default config %v not found", c.DefaultScope)
 		}
 	}
 

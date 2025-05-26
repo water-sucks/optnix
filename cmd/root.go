@@ -61,19 +61,26 @@ func MainCommand() *cobra.Command {
 
 	cmd := cobra.Command{
 		Use:   "optnix -s [SCOPE] [OPTION-NAME]",
-		Short: "optnix-cli",
+		Short: "optnix",
 		Long:  "optnix - a fast Nix module system options searcher",
 		Args: func(cmd *cobra.Command, args []string) error {
 			argc := len(args)
 
 			if !opts.Interactive && argc < 1 {
+				scopeName := opts.Scope
+				if scopeName == "" {
+					scopeName = "[SCOPE]"
+				}
+
 				return cmdUtils.ErrorWithHint{
 					Msg:  "argument [OPTION-NAME] is required for non-interactive mode",
-					Hint: fmt.Sprintf(`try running "optnix -s %v [OPTION-NAME]"`, opts.Scope),
+					Hint: fmt.Sprintf(`try running "optnix -s %v [OPTION-NAME]"`, scopeName),
 				}
 			}
 
-			opts.OptionInput = args[0]
+			if argc > 0 {
+				opts.OptionInput = args[0]
+			}
 
 			// Validation of flags
 			if opts.JSON && opts.Interactive {
@@ -100,6 +107,10 @@ func MainCommand() *cobra.Command {
 			cfg, err := config.ParseConfig(configLocations...)
 			if err != nil {
 				log.Errorf("failed to parse config: %v", err)
+				return err
+			}
+
+			if err := cfg.Validate(); err != nil {
 				return err
 			}
 
@@ -179,6 +190,12 @@ func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, erro
 func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
+
+	if len(cfg.Scopes) == 0 {
+		err := fmt.Errorf("no scopes are defined in the configuration")
+		log.Errorf("%v", err)
+		return err
+	}
 
 	var scope *config.Scope
 	for s, v := range cfg.Scopes {

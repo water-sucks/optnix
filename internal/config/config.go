@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
@@ -61,6 +62,8 @@ func ParseConfig(location ...string) (*Config, error) {
 	return cfg, nil
 }
 
+var optionTemplateRegex = regexp.MustCompile(`{{\s*-?\s*\.Option\b[^}]*}}`)
+
 func (c *Config) Validate() error {
 	for s, v := range c.Scopes {
 		if v.OptionsListCmd == "" && v.OptionsListFile == "" {
@@ -70,14 +73,27 @@ func (c *Config) Validate() error {
 
 	if c.DefaultScope != "" {
 		foundScope := false
-		for k := range c.Scopes {
-			if k == c.DefaultScope {
+		for n := range c.Scopes {
+			if n == c.DefaultScope {
 				foundScope = true
 				break
 			}
 		}
 		if !foundScope {
 			return fmt.Errorf("default config %v not found", c.DefaultScope)
+		}
+	}
+
+	for n, s := range c.Scopes {
+		if s.EvaluatorCmd == "" {
+			continue
+		}
+
+		matches := optionTemplateRegex.FindAllString(s.EvaluatorCmd, -1)
+		if len(matches) == 0 {
+			return fmt.Errorf("evaluator for scope %v does not contain the placeholder {{ .Option }}", n)
+		} else if len(matches) > 1 {
+			return fmt.Errorf("multiple instances of {{ .Option }} placeholder in evaluator for scope %v", n)
 		}
 	}
 

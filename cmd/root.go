@@ -47,8 +47,8 @@ type CmdOptions struct {
 	JSON        bool
 	MinScore    int64
 	ValueOnly   bool
-
 	Scope       string
+
 	OptionInput string
 }
 
@@ -60,36 +60,30 @@ func MainCommand() *cobra.Command {
 	cmdCtx = logger.WithLogger(cmdCtx, log)
 
 	cmd := cobra.Command{
-		Use:   "optnix [SCOPE] [OPTION]",
+		Use:   "optnix -s [SCOPE] [OPTION-NAME]",
 		Short: "optnix-cli",
 		Long:  "optnix - a fast Nix module system options searcher",
 		Args: func(cmd *cobra.Command, args []string) error {
-			// Grab positional args [SCOPE] and [OPTION]
 			argc := len(args)
 
-			if argc == 0 {
-				return cmdUtils.ArgParseError{Msg: "missing required argument [SCOPE]"}
-			}
-			opts.Scope = args[0]
-
-			if !opts.Interactive && argc < 2 {
-				return cmdUtils.ArgParseError{
-					Msg:  "argument [NAME] is required for non-interactive mode",
-					Hint: fmt.Sprintf(`try running "optnix %v 'option-name'"`, opts.Scope),
+			if !opts.Interactive && argc < 1 {
+				return cmdUtils.ErrorWithHint{
+					Msg:  "argument [OPTION-NAME] is required for non-interactive mode",
+					Hint: fmt.Sprintf(`try running "optnix -s %v [OPTION-NAME]"`, opts.Scope),
 				}
 			}
 
-			opts.OptionInput = args[1]
+			opts.OptionInput = args[0]
 
 			// Validation of flags
 			if opts.JSON && opts.Interactive {
-				return cmdUtils.ArgParseError{Msg: "--json and --interactive flags conflict"}
+				return cmdUtils.ErrorWithHint{Msg: "--json and --interactive flags conflict"}
 			}
 			if opts.JSON && opts.ValueOnly {
-				return cmdUtils.ArgParseError{Msg: "--json and --value-only flags conflict"}
+				return cmdUtils.ErrorWithHint{Msg: "--json and --value-only flags conflict"}
 			}
 			if opts.ValueOnly && opts.Interactive {
-				return cmdUtils.ArgParseError{Msg: "--interactive and --value-only flags conflict"}
+				return cmdUtils.ErrorWithHint{Msg: "--interactive and --value-only flags conflict"}
 			}
 
 			return nil
@@ -107,6 +101,17 @@ func MainCommand() *cobra.Command {
 			if err != nil {
 				log.Errorf("failed to parse config: %v", err)
 				return err
+			}
+
+			if opts.Scope == "" {
+				if cfg.DefaultScope == "" {
+					return cmdUtils.ErrorWithHint{
+						Msg:  "no scope was provided and no default scope is set in the configuration",
+						Hint: "either set a default configuration or specify one with -s",
+					}
+				}
+
+				opts.Scope = cfg.DefaultScope
 			}
 
 			if opts.MinScore != 0 {
@@ -136,9 +141,10 @@ func MainCommand() *cobra.Command {
 	cmd.Flags().BoolP("help", "h", false, "Show this help menu")
 	cmd.Flags().Bool("version", false, "Display version information")
 
+	cmd.Flags().StringVarP(&opts.Scope, "scope", "s", "", "Scope `name` to use (required)")
 	cmd.Flags().BoolVarP(&opts.Interactive, "interactive", "i", false, "Show interactive search TUI for options")
 	cmd.Flags().BoolVarP(&opts.JSON, "json", "j", false, "Output information in JSON format")
-	cmd.Flags().Int64VarP(&opts.MinScore, "min-score", "m", 0, "Minimum score threshold for matching")
+	cmd.Flags().Int64VarP(&opts.MinScore, "min-score", "m", 0, "Minimum `score` threshold for matching")
 	cmd.Flags().StringSliceVarP(&opts.Config, "config", "c", nil, "Path to extra configuration `files` to load")
 	cmd.Flags().BoolVarP(&opts.ValueOnly, "value-only", "v", false, "Only show option values")
 

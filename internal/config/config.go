@@ -12,8 +12,9 @@ import (
 )
 
 type Config struct {
-	MinScore     int64 `koanf:"min_score"`
-	DebounceTime int64 `koanf:"debounce_time"`
+	MinScore     int64  `koanf:"min_score"`
+	DebounceTime int64  `koanf:"debounce_time"`
+	DefaultScope string `koanf:"default_scope"`
 
 	Scopes map[string]Scope `koanf:"scopes"`
 }

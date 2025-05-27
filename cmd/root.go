@@ -21,6 +21,7 @@ import (
 	"github.com/water-sucks/optnix/internal/logger"
 	"github.com/water-sucks/optnix/internal/utils"
 	"github.com/water-sucks/optnix/option"
+	"github.com/water-sucks/optnix/tui"
 	"github.com/yarlson/pin"
 )
 
@@ -320,8 +321,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 
 	if opts.Interactive {
 		spinner.Stop()
-		log.Info("coming soon!")
-		return nil
+		return tui.OptionTUI(options, cfg.MinScore, evaluator, opts.OptionInput)
 	}
 
 	spinner.UpdateMessage(fmt.Sprintf("Finding option %v...", opts.OptionInput))

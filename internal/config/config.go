@@ -103,6 +103,7 @@ func (c *Config) Validate() error {
 var DefaultConfigLocations = []string{
 	"/etc/optnix/config.toml",
 	// User config path filled in by init(), depending on `XDG_CONFIG_HOME` presence
+	// optnix.toml in the current directory, if it exists
 }
 
 func init() {
@@ -116,4 +117,6 @@ func init() {
 	if homeDirPath != "" {
 		DefaultConfigLocations = append(DefaultConfigLocations, homeDirPath)
 	}
+
+	DefaultConfigLocations = append(DefaultConfigLocations, "optnix.toml")
 }

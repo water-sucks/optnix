@@ -7,15 +7,21 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
+	"strings"
+	"text/template"
 
 	"github.com/fatih/color"
 	"github.com/google/shlex"
+	"github.com/sahilm/fuzzy"
 	"github.com/spf13/cobra"
 	buildOpts "github.com/water-sucks/optnix/internal/build"
 	cmdUtils "github.com/water-sucks/optnix/internal/cmd/utils"
 	"github.com/water-sucks/optnix/internal/config"
 	"github.com/water-sucks/optnix/internal/logger"
+	"github.com/water-sucks/optnix/internal/utils"
 	"github.com/water-sucks/optnix/option"
+	"github.com/yarlson/pin"
 )
 
 const helpTemplate = `Usage:{{if .Runnable}}
@@ -135,7 +141,7 @@ func MainCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := CommandMain(cmd, &opts); err != nil {
+			if err := commandMain(cmd, &opts); err != nil {
 				os.Exit(1)
 			}
 		},
@@ -187,7 +193,84 @@ func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, erro
 	return l, nil
 }
 
-func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
+func getOptionListFromScope(log *logger.Logger, scopeName string, scope *config.Scope) (option.NixosOptionSource, error) {
+	if scope.OptionsListFile != "" {
+		optionsFile, err := os.Open(scope.OptionsListFile)
+		if err != nil {
+			log.Errorf("failed to open options file: %v", err)
+		} else {
+			defer func() { _ = optionsFile.Close() }()
+
+			l, err := option.LoadOptions(optionsFile)
+			if err != nil {
+				log.Errorf("failed to load options using file strategy: %v", err)
+				log.Info("attempting to load using command strategy instead")
+			} else {
+				return l, nil
+			}
+		}
+	}
+
+	if scope.OptionsListCmd != "" {
+		l, err := runGenerateOptionListCmd(scope.OptionsListCmd)
+		if err != nil {
+			log.Errorf("failed to run options cmd: %v", err)
+			return nil, err
+		}
+
+		return l, nil
+	}
+
+	return nil, fmt.Errorf("no options found through all strategies for scope '%v'", scopeName)
+}
+
+func constructEvaluatorFromScope(s *config.Scope) (option.EvaluatorFunc, error) {
+	if s.EvaluatorCmd == "" {
+		return nil, nil
+	}
+
+	tmpl, err := template.New("eval").Parse(s.EvaluatorCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(optionName string) (string, error) {
+		var buf bytes.Buffer
+
+		err := tmpl.Execute(&buf, map[string]string{
+			"Option": optionName,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		argv, err := shlex.Split(buf.String())
+		if err != nil {
+			return "", err
+		}
+
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		cmd := exec.Command(argv[0], argv[1:]...)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		err = cmd.Run()
+		if err != nil {
+			return "", &option.AttributeEvaluationError{
+				Attribute:        optionName,
+				EvaluationOutput: strings.TrimSpace(stderr.String()),
+			}
+		}
+
+		value := strings.TrimSpace(stdout.String())
+
+		return value, nil
+	}, nil
+}
+
+func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
 
@@ -211,44 +294,153 @@ func CommandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		return err
 	}
 
-	var optionsList option.NixosOptionSource
+	spinner := pin.New("Loading...",
+		pin.WithSpinnerColor(pin.ColorCyan),
+		pin.WithTextColor(pin.ColorRed),
+		pin.WithPosition(pin.PositionRight),
+		pin.WithSpinnerFrames([]rune{'-', '\\', '|', '/'}),
+		pin.WithWriter(os.Stderr),
+	)
+	cancelSpinner := spinner.Start(context.Background())
+	defer cancelSpinner()
 
-	if scope.OptionsListFile != "" {
-		optionsFile, err := os.Open(scope.OptionsListFile)
-		if err != nil {
-			log.Errorf("failed to open options file: %v", err)
-		} else {
-			defer func() { _ = optionsFile.Close() }()
+	spinner.UpdateMessage("Loading options...")
 
-			l, err := option.LoadOptions(optionsFile)
-			if err != nil {
-				log.Errorf("failed to load options using file strategy: %v", err)
-				log.Info("attempting to load using command strategy instead")
-			} else {
-				optionsList = l
-			}
-		}
-	}
-
-	if len(optionsList) == 0 && scope.OptionsListCmd != "" {
-		l, err := runGenerateOptionListCmd(scope.OptionsListCmd)
-		if err != nil {
-			log.Errorf("failed to run options cmd: %v", err)
-			return err
-		}
-
-		optionsList = l
-	}
-
-	if optionsList == nil {
-		err := fmt.Errorf("no options found through all strategies for scope '%v'", opts.Scope)
-		log.Errorf("%v", err)
+	options, err := getOptionListFromScope(log, opts.Scope, scope)
+	if err != nil {
+		spinner.Stop()
 		return err
 	}
 
-	log.Infof("options list length: %v", len(optionsList))
+	evaluator, err := constructEvaluatorFromScope(scope)
+	if err != nil {
+		log.Errorf("failed to construct evaluator: %v", err)
+		log.Warn("will not be able to evaluate values properly, still proceeding")
+	}
 
-	return nil
+	if opts.Interactive {
+		spinner.Stop()
+		log.Info("coming soon!")
+		return nil
+	}
+
+	spinner.UpdateMessage(fmt.Sprintf("Finding option %v...", opts.OptionInput))
+
+	exactOptionMatchIdx := slices.IndexFunc(options, func(o option.NixosOption) bool {
+		return o.Name == opts.OptionInput
+	})
+	if exactOptionMatchIdx != -1 {
+		o := options[exactOptionMatchIdx]
+
+		spinner.UpdateMessage("Evaluating option value...")
+		var evaluatedValue string
+		var evalErr error
+
+		if evaluator != nil {
+			evaluatedValue, evalErr = evaluator(o.Name)
+		} else {
+			evaluatedValue = "no evaluator configured for this scope"
+		}
+
+		spinner.Stop()
+
+		if opts.JSON {
+			displayOptionJson(&o, &evaluatedValue)
+		} else if opts.ValueOnly {
+			fmt.Printf("%v\n", evaluatedValue)
+		} else {
+			fmt.Print(o.PrettyPrint(&option.ValuePrinterInput{
+				Value: evaluatedValue,
+				Err:   evalErr,
+			}))
+		}
+
+		return nil
+	}
+
+	spinner.Stop()
+
+	msg := fmt.Sprintf("no exact match for query '%s' found", opts.OptionInput)
+	err = fmt.Errorf("%v", msg)
+
+	fuzzySearchResults := fuzzy.FindFrom(opts.OptionInput, options)
+	if len(fuzzySearchResults) > 10 {
+		fuzzySearchResults = fuzzySearchResults[:10]
+	}
+
+	fuzzySearchResults = utils.FilterMinimumScoreMatches(fuzzySearchResults, cfg.MinScore)
+
+	if opts.JSON {
+		displayErrorJson(msg, fuzzySearchResults)
+		return err
+	}
+
+	log.Error(msg)
+	if len(fuzzySearchResults) > 0 {
+		log.Print("\nSome similar options were found:\n")
+		for _, v := range fuzzySearchResults {
+			log.Printf(" - %s\n", v.Str)
+		}
+	} else {
+		log.Print("\nTry refining your search query.\n")
+	}
+
+	return err
+}
+
+type optionJsonOutput struct {
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	Type         string   `json:"type"`
+	Value        *string  `json:"value"`
+	Default      string   `json:"default"`
+	Example      string   `json:"example"`
+	Location     []string `json:"loc"`
+	ReadOnly     bool     `json:"readOnly"`
+	Declarations []string `json:"declarations"`
+}
+
+func displayOptionJson(o *option.NixosOption, evaluatedValue *string) {
+	defaultText := ""
+	if o.Default != nil {
+		defaultText = o.Default.Text
+	}
+
+	exampleText := ""
+	if o.Example != nil {
+		exampleText = o.Example.Text
+	}
+
+	bytes, _ := json.MarshalIndent(optionJsonOutput{
+		Name:         o.Name,
+		Description:  o.Description,
+		Type:         o.Type,
+		Value:        evaluatedValue,
+		Default:      defaultText,
+		Example:      exampleText,
+		Location:     o.Location,
+		ReadOnly:     o.ReadOnly,
+		Declarations: o.Declarations,
+	}, "", "  ")
+	fmt.Printf("%v\n", string(bytes))
+}
+
+type errorJsonOutput struct {
+	Message        string   `json:"message"`
+	SimilarOptions []string `json:"similar_options"`
+}
+
+func displayErrorJson(msg string, matches fuzzy.Matches) {
+	matchedStrings := make([]string, len(matches))
+	for i, match := range matches {
+		matchedStrings[i] = match.Str
+	}
+
+	bytes, _ := json.MarshalIndent(errorJsonOutput{
+		Message:        msg,
+		SimilarOptions: matchedStrings,
+	}, "", "  ")
+	fmt.Printf("%v\n", string(bytes))
 }
 
 func Execute() {

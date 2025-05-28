@@ -8,7 +8,7 @@ buildGoModule (finalAttrs: {
   version = "0.1.0-dev";
   src = nix-gitignore.gitignoreSource [] ./.;
 
-  vendorHash = "sha256-VbrMPW8GEqt9XgOAkG3z8nU4UEfZbo3ASdJKZrN777A=";
+  vendorHash = "sha256-+s+J1vi69riJWX/wf8xMOAihvUlU80aOXqsOfhQkv4c=";
 
   env = {
     CGO_ENABLED = 0;

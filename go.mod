@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/fatih/color v1.18.0
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/knadh/koanf v1.5.0
 	github.com/muesli/termenv v0.16.0
 	github.com/sahilm/fuzzy v0.1.1

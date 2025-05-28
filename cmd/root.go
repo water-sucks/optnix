@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/fatih/color"
-	"github.com/google/shlex"
 	"github.com/sahilm/fuzzy"
 	"github.com/spf13/cobra"
 	buildOpts "github.com/water-sucks/optnix/internal/build"
@@ -170,23 +168,13 @@ func MainCommand() *cobra.Command {
 }
 
 func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, error) {
-	argv, err := shlex.Split(commandStr)
-	if err != nil {
-		return nil, fmt.Errorf("malformed command: %w", err)
-	}
-
-	var stdout bytes.Buffer
-
-	cmd := exec.Command(argv[0], argv[1:]...)
-	cmd.Stdout = &stdout
-
-	err = cmd.Run()
+	cmdOutput, err := utils.ExecShellAndCaptureOutput(commandStr)
 	if err != nil {
 		return nil, err
 	}
 
 	var l option.NixosOptionSource
-	err = json.Unmarshal(stdout.Bytes(), &l)
+	err = json.Unmarshal([]byte(cmdOutput.Stdout), &l)
 	if err != nil {
 		return nil, err
 	}
@@ -245,27 +233,15 @@ func constructEvaluatorFromScope(s *config.Scope) (option.EvaluatorFunc, error) 
 			return "", err
 		}
 
-		argv, err := shlex.Split(buf.String())
-		if err != nil {
-			return "", err
-		}
-
-		var stdout bytes.Buffer
-		var stderr bytes.Buffer
-
-		cmd := exec.Command(argv[0], argv[1:]...)
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-
-		err = cmd.Run()
+		cmdOutput, err := utils.ExecShellAndCaptureOutput(buf.String())
 		if err != nil {
 			return "", &option.AttributeEvaluationError{
 				Attribute:        optionName,
-				EvaluationOutput: strings.TrimSpace(stderr.String()),
+				EvaluationOutput: strings.TrimSpace(cmdOutput.Stderr),
 			}
 		}
 
-		value := strings.TrimSpace(stdout.String())
+		value := strings.TrimSpace(cmdOutput.Stdout)
 
 		return value, nil
 	}, nil

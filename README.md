@@ -49,7 +49,7 @@ For example, a "scope" for a NixOS configuration located at the flake ref
 
 Scopes need to be defined from the configuration file.
 
-## Option List
+### Option List
 
 An option list is a list of JSON objects; each JSON object describes a single
 option, with the following values for an example option:

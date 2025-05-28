@@ -47,17 +47,18 @@ Flags:
 `
 
 type CmdOptions struct {
-	Interactive bool
-	Config      []string
-	JSON        bool
-	MinScore    int64
-	ValueOnly   bool
-	Scope       string
+	Interactive         bool
+	Config              []string
+	JSON                bool
+	MinScore            int64
+	ValueOnly           bool
+	Scope               string
+	GenerateCompletions string
 
 	OptionInput string
 }
 
-func MainCommand() *cobra.Command {
+func CreateCommand() *cobra.Command {
 	opts := CmdOptions{}
 	cmdCtx := context.Background()
 
@@ -70,6 +71,18 @@ func MainCommand() *cobra.Command {
 		Long:  "optnix - a fast Nix module system options searcher",
 		Args: func(cmd *cobra.Command, args []string) error {
 			argc := len(args)
+
+			if opts.GenerateCompletions != "" {
+				switch opts.GenerateCompletions {
+				case "bash", "zsh", "fish":
+				default:
+					return cmdUtils.ErrorWithHint{
+						Msg:  fmt.Sprintf("unsupported shell '%v'", opts.GenerateCompletions),
+						Hint: "supported shells for completion are bash, zsh, or fish",
+					}
+				}
+				return nil
+			}
 
 			if !opts.Interactive && argc < 1 {
 				scopeName := opts.Scope
@@ -107,6 +120,10 @@ func MainCommand() *cobra.Command {
 			DisableDefaultCmd: true,
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if opts.GenerateCompletions != "" {
+				return nil
+			}
+
 			configLocations := append(config.DefaultConfigLocations, opts.Config...)
 
 			cfg, err := config.ParseConfig(configLocations...)
@@ -163,6 +180,10 @@ func MainCommand() *cobra.Command {
 	cmd.Flags().Int64VarP(&opts.MinScore, "min-score", "m", 0, "Minimum `score` threshold for matching")
 	cmd.Flags().StringSliceVarP(&opts.Config, "config", "c", nil, "Path to extra configuration `files` to load")
 	cmd.Flags().BoolVarP(&opts.ValueOnly, "value-only", "v", false, "Only show option values")
+
+	cmd.Flags().StringVar(&opts.GenerateCompletions, "completion", "", "Generate completions for a shell")
+	_ = cmd.Flags().MarkHidden("completion")
+	_ = cmd.RegisterFlagCompletionFunc("completion", completeCompletionShells)
 
 	return &cmd
 }
@@ -248,6 +269,11 @@ func constructEvaluatorFromScope(s *config.Scope) (option.EvaluatorFunc, error) 
 }
 
 func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
+	if opts.GenerateCompletions != "" {
+		GenerateCompletions(cmd, opts.GenerateCompletions)
+		return nil
+	}
+
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
 
@@ -420,7 +446,7 @@ func displayErrorJson(msg string, matches fuzzy.Matches) {
 }
 
 func Execute() {
-	if err := MainCommand().Execute(); err != nil {
+	if err := CreateCommand().Execute(); err != nil {
 		os.Exit(1)
 	}
 }

@@ -1,5 +1,7 @@
 {
   lib,
+  stdenv,
+  installShellFiles,
   buildGoModule,
   nix-gitignore,
 }:
@@ -9,6 +11,8 @@ buildGoModule (finalAttrs: {
   src = nix-gitignore.gitignoreSource [] ./.;
 
   vendorHash = "sha256-+s+J1vi69riJWX/wf8xMOAihvUlU80aOXqsOfhQkv4c=";
+
+  nativeBuildInputs = [installShellFiles];
 
   env = {
     CGO_ENABLED = 0;
@@ -27,6 +31,13 @@ buildGoModule (finalAttrs: {
     install -Dm755 ./optnix -t $out/bin
 
     runHook postInstall
+  '';
+
+  postInstall = lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
+    installShellCompletion --cmd optnix \
+      --bash <($out/bin/optnix --completion bash) \
+      --fish <($out/bin/optnix --completion fish) \
+      --zsh <($out/bin/optnix --completion zsh)
   '';
 
   meta = {

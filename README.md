@@ -79,6 +79,68 @@ Given an options attribute set, a list of these options can be generated using
 [`lib.optionAttrSetToDocList`](https://noogle.dev/f/lib/optionAttrSetToDocList)
 from `nixpkgs`. This will be seen in later examples.
 
+## Installation
+
+Use the provided flake input:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs";
+    optnix.url = "github:water-sucks/optnix";
+  };
+
+  outputs = inputs: {
+    nixosConfigurations.jdoe = inputs.nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ({pkgs, ...}: {
+          environment.systemPackages = [
+            inputs.optnix.packages.${pkgs.system}.optnix
+          ];
+        })
+      ];
+    };
+  };
+}
+```
+
+Or import it inside a Nix expression through `fetchTarball`:
+
+```nix
+{pkgs, ...}: let
+  optnix-url = "https://github.com/water-sucks/optnix/archive/GITREVORBRANCHDEADBEEFDEADBEEF0000.tar.gz";
+  optnix = (import "${builtins.fetchTarball optnix}").packages.${pkgs.system}.optnix;
+in {
+  environment.systemPackages = [
+    optnix
+    # ...
+  ];
+}
+```
+
+## Cache
+
+There is a Cachix cache available. Add the following to your Nix configuration
+to avoid lengthy rebuilds and fetching extra build-time dependencies:
+
+```nix
+{
+  nix.settings = {
+    substituters = [ "https://watersucks.cachix.org" ];
+    trusted-public-keys = [
+      "watersucks.cachix.org-1:6gadPC5R8iLWQ3EUtfu3GFrVY7X6I4Fwz/ihW25Jbv8="
+    ];
+  };
+}
+```
+
+Or if using the Cachix CLI outside a NixOS environment:
+
+```sh
+$ cachix use watersucks
+```
+
 ## Configuration
 
 Configurations are defined in [`TOML`](https://toml.io) format, and are merged

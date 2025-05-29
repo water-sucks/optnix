@@ -146,7 +146,7 @@ $ cachix use watersucks
 Configurations are defined in [`TOML`](https://toml.io) format, and are merged
 together in order of priority.
 
-There are three possible locations for configurations (in order of highest to
+There are four possible locations for configurations (in order of highest to
 lowest priority, and only if they exist):
 
 - Configuration paths specified on the command line with `--config`

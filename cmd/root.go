@@ -119,6 +119,7 @@ func CreateCommand() *cobra.Command {
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
+		ValidArgsFunction: completeOptionsFromScope(&opts.Scope),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.GenerateCompletions != "" {
 				return nil
@@ -183,6 +184,8 @@ func CreateCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.GenerateCompletions, "completion", "", "Generate completions for a shell")
 	_ = cmd.Flags().MarkHidden("completion")
+
+	_ = cmd.RegisterFlagCompletionFunc("scope", completeScopes)
 	_ = cmd.RegisterFlagCompletionFunc("completion", completeCompletionShells)
 
 	return &cmd
@@ -201,6 +204,26 @@ func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, erro
 	}
 
 	return l, nil
+}
+
+func getScopeFromCfg(name string, cfg *config.Config) (*config.Scope, error) {
+	if len(cfg.Scopes) == 0 {
+		return nil, fmt.Errorf("no scopes are defined in the configuration")
+	}
+
+	var scope *config.Scope
+	for s, v := range cfg.Scopes {
+		if s == name {
+			scope = &v
+			break
+		}
+	}
+
+	if scope == nil {
+		return nil, fmt.Errorf("scope '%v' not found in configuration", name)
+	}
+
+	return scope, nil
 }
 
 func getOptionListFromScope(log *logger.Logger, scopeName string, scope *config.Scope) (option.NixosOptionSource, error) {
@@ -277,22 +300,8 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
 
-	if len(cfg.Scopes) == 0 {
-		err := fmt.Errorf("no scopes are defined in the configuration")
-		log.Errorf("%v", err)
-		return err
-	}
-
-	var scope *config.Scope
-	for s, v := range cfg.Scopes {
-		if s == opts.Scope {
-			scope = &v
-			break
-		}
-	}
-
-	if scope == nil {
-		err := fmt.Errorf("scope '%v' not found in configuration", opts.Scope)
+	scope, err := getScopeFromCfg(opts.Scope, cfg)
+	if err != nil {
 		log.Errorf("%v", err)
 		return err
 	}

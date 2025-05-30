@@ -179,9 +179,13 @@ evaluator = "nix eval /path/to/flake#nixosConfigurations.nixos.config.{{ .Option
 
 ## Integrations
 
-An integration with [`nixos-cli`](https://github.com/nix-community/nixos-cli)
-with zero scope configuration required is coming soon. The original code for
-this application is sourced from it.
+`optnix` can be used as a Go library, and is used as such in the following
+applications.
+
+### [`nixos-cli`](https://github.com/nix-community/nixos-cli)
+
+`optnix` is exposed through the `nixos option` command in `nixos-cli`, and
+requires zero configuration for discovery of NixOS options.
 
 ## Recipes
 

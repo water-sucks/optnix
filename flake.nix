@@ -4,8 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    flake-parts.url = "github:hercules-ci/flake-parts";
-
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -13,37 +11,32 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
-    flake-parts,
     ...
-  } @ inputs: let
+  }: let
     inherit (nixpkgs) lib;
-  in
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [];
+    eachSystem = lib.genAttrs lib.systems.flakeExposed;
+  in {
+    packages = eachSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      inherit (pkgs) callPackage;
+    in {
+      default = self.packages.${system}.optnix;
+      optnix = callPackage ./package.nix {};
+    });
 
-      systems = lib.systems.flakeExposed;
-
-      perSystem = {
-        pkgs,
-        self',
-        ...
-      }: let
-        inherit (pkgs) callPackage go golangci-lint mkShell;
-      in {
-        packages = {
-          default = self'.packages.optnix;
-
-          optnix = callPackage ./package.nix {};
-        };
-
-        devShells.default = mkShell {
-          name = "optnix-shell";
-          nativeBuildInputs = [
-            go
-            golangci-lint
-          ];
-        };
+    devShells = eachSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      inherit (pkgs) go golangci-lint;
+    in {
+      default = pkgs.mkShell {
+        name = "optnix-shell";
+        buildInputs = [
+          go
+          golangci-lint
+        ];
       };
-    };
+    });
+  };
 }

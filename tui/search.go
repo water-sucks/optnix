@@ -23,7 +23,7 @@ type SearchBarModel struct {
 	totalCount  int
 }
 
-func NewSearchBarModel(totalCount int) SearchBarModel {
+func NewSearchBarModel(totalCount int, debounceTime int64) SearchBarModel {
 	ti := textinput.New()
 	ti.Placeholder = "Search for options..."
 	ti.Prompt = "> "
@@ -33,7 +33,7 @@ func NewSearchBarModel(totalCount int) SearchBarModel {
 	return SearchBarModel{
 		input:        ti,
 		debouncer:    debouncer,
-		debounceTime: 25,
+		debounceTime: debounceTime,
 		totalCount:   totalCount,
 	}
 }

@@ -50,8 +50,6 @@ type Model struct {
 	results ResultListModel
 	preview PreviewModel
 	eval    EvalValueModel
-
-	evalFunc option.EvaluatorFunc
 }
 
 type ViewMode int
@@ -73,11 +71,12 @@ const (
 func NewModel(
 	options option.NixosOptionSource,
 	minScore int64,
+	debounceTime int64,
 	evaluator option.EvaluatorFunc,
 	initialInput string,
 ) Model {
 	preview := NewPreviewModel()
-	search := NewSearchBarModel(len(options)).
+	search := NewSearchBarModel(len(options), debounceTime).
 		SetFocused(true).
 		SetValue(initialInput)
 	results := NewResultListModel(options).
@@ -271,11 +270,11 @@ func (m Model) View() string {
 	)
 }
 
-func OptionTUI(options option.NixosOptionSource, minScore int64, evaluator option.EvaluatorFunc, initialInput string) error {
+func OptionTUI(options option.NixosOptionSource, minScore int64, debounceTime int64, evaluator option.EvaluatorFunc, initialInput string) error {
 	closeLogFile, _ := cmdUtils.ConfigureBubbleTeaLogger("option-tui")
 	defer closeLogFile()
 
-	p := tea.NewProgram(NewModel(options, minScore, evaluator, initialInput), tea.WithAltScreen())
+	p := tea.NewProgram(NewModel(options, minScore, debounceTime, evaluator, initialInput), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		return err

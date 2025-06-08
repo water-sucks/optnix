@@ -16,6 +16,7 @@ type Config struct {
 	MinScore     int64  `koanf:"min_score"`
 	DebounceTime int64  `koanf:"debounce_time"`
 	DefaultScope string `koanf:"default_scope"`
+	FormatterCmd string `koanf:"formatter_cmd"`
 
 	Scopes map[string]Scope `koanf:"scopes"`
 }
@@ -31,6 +32,7 @@ func NewConfig() *Config {
 	return &Config{
 		MinScore:     1,
 		DebounceTime: 25,
+		FormatterCmd: "nixfmt",
 
 		Scopes: make(map[string]Scope),
 	}

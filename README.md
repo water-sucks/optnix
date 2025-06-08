@@ -157,9 +157,15 @@ lowest priority, and only if they exist):
 ### Config Schema
 
 ```toml
-min_score = 1 # min score required for search matches
-debounce_time = 25 # debounce time for search, in ms
-default_scope = "" # default scope to use if not specified on the command line
+# Minimum score required for search matches
+min_score = 1
+# Debounce time for search, in ms
+debounce_time = 25
+# Default scope to use if not specified on the command line
+default_scope = ""
+# Formatter command to use for evaluated values, if available. Takes input on
+# stdin and outputs the formatted code back to stdout.
+formatter_cmd = "nixfmt"
 
 [scopes.<name>]
 # Description text, for command-line completion
@@ -302,14 +308,13 @@ jq '[to_entries[] | .value.name = .key | .value.declarations = [.value.declarati
 evaluator = "nix eval /path/to/flake#nixosConfigurations.JaMarcus.config.home-manager.users.varun.{{ .Option }}"
 ```
 
-
 ### flake-parts
 
 Flake-parts configurations likely need to be defined on a per-flake basis.
 
-It can be useful to configure a repository-specific `optnix.toml` and have
-a `options-search` Nix app wrapper around `optnix`, in order to prevent
-excessive command-line parameter specifications.
+It can be useful to configure a repository-specific `optnix.toml` and have a
+`options-search` Nix app wrapper around `optnix`, in order to prevent excessive
+command-line parameter specifications.
 
 Import the following flake module code to expose an options-doc directly inside
 the flake of choice to inspect options for:

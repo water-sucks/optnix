@@ -257,7 +257,7 @@ func getOptionListFromScope(log *logger.Logger, scopeName string, scope *config.
 	return nil, fmt.Errorf("no options found through all strategies for scope '%v'", scopeName)
 }
 
-func constructEvaluatorFromScope(s *config.Scope) (option.EvaluatorFunc, error) {
+func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) (option.EvaluatorFunc, error) {
 	if s.EvaluatorCmd == "" {
 		return nil, nil
 	}
@@ -285,7 +285,13 @@ func constructEvaluatorFromScope(s *config.Scope) (option.EvaluatorFunc, error) 
 			}
 		}
 
-		value := strings.TrimSpace(cmdOutput.Stdout)
+		output := cmdOutput.Stdout
+
+		if formatterCmd != "" {
+			output, _ = option.FormatNixValue(formatterCmd, output)
+		}
+
+		value := strings.TrimSpace(output)
 
 		return value, nil
 	}, nil
@@ -324,7 +330,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		return err
 	}
 
-	evaluator, err := constructEvaluatorFromScope(scope)
+	evaluator, err := constructEvaluatorFromScope(cfg.FormatterCmd, scope)
 	if err != nil {
 		log.Errorf("failed to construct evaluator: %v", err)
 		log.Warn("will not be able to evaluate values properly, still proceeding")

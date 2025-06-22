@@ -47,7 +47,7 @@ Flags:
 `
 
 type CmdOptions struct {
-	Interactive         bool
+	NonInteractive      bool
 	Config              []string
 	JSON                bool
 	MinScore            int64
@@ -84,7 +84,24 @@ func CreateCommand() *cobra.Command {
 				return nil
 			}
 
-			if !opts.Interactive && argc < 1 {
+			if argc > 0 {
+				opts.OptionInput = args[0]
+			}
+
+			// Imply `--non-interactive` for scripting output if not specified
+			if opts.JSON || opts.ValueOnly {
+				if cmd.Flags().Changed("non-interactive") && !opts.NonInteractive {
+					return cmdUtils.ErrorWithHint{Msg: "--non-interactive is required when using output format flags"}
+				}
+
+				opts.NonInteractive = true
+			}
+
+			if opts.JSON && opts.ValueOnly {
+				return cmdUtils.ErrorWithHint{Msg: "--json and --value-only flags conflict"}
+			}
+
+			if opts.NonInteractive && argc < 1 {
 				scopeName := opts.Scope
 				if scopeName == "" {
 					scopeName = "[SCOPE]"
@@ -94,21 +111,6 @@ func CreateCommand() *cobra.Command {
 					Msg:  "argument [OPTION-NAME] is required for non-interactive mode",
 					Hint: fmt.Sprintf(`try running "optnix -s %v [OPTION-NAME]"`, scopeName),
 				}
-			}
-
-			if argc > 0 {
-				opts.OptionInput = args[0]
-			}
-
-			// Validation of flags
-			if opts.JSON && opts.Interactive {
-				return cmdUtils.ErrorWithHint{Msg: "--json and --interactive flags conflict"}
-			}
-			if opts.JSON && opts.ValueOnly {
-				return cmdUtils.ErrorWithHint{Msg: "--json and --value-only flags conflict"}
-			}
-			if opts.ValueOnly && opts.Interactive {
-				return cmdUtils.ErrorWithHint{Msg: "--interactive and --value-only flags conflict"}
 			}
 
 			return nil
@@ -176,7 +178,7 @@ func CreateCommand() *cobra.Command {
 	cmd.Flags().Bool("version", false, "Display version information")
 
 	cmd.Flags().StringVarP(&opts.Scope, "scope", "s", "", "Scope `name` to use (required)")
-	cmd.Flags().BoolVarP(&opts.Interactive, "interactive", "i", false, "Show interactive search TUI for options")
+	cmd.Flags().BoolVarP(&opts.NonInteractive, "non-interactive", "n", false, "Do not show search TUI for options")
 	cmd.Flags().BoolVarP(&opts.JSON, "json", "j", false, "Output information in JSON format")
 	cmd.Flags().Int64VarP(&opts.MinScore, "min-score", "m", 0, "Minimum `score` threshold for matching")
 	cmd.Flags().StringSliceVarP(&opts.Config, "config", "c", nil, "Path to extra configuration `files` to load")
@@ -336,7 +338,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		log.Warn("will not be able to evaluate values properly, still proceeding")
 	}
 
-	if opts.Interactive {
+	if !opts.NonInteractive {
 		spinner.Stop()
 		return tui.OptionTUI(options, cfg.MinScore, cfg.DebounceTime, evaluator, opts.OptionInput)
 	}

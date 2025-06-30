@@ -18,6 +18,8 @@
     inherit (nixpkgs) lib;
     eachSystem = lib.genAttrs lib.systems.flakeExposed;
   in {
+    lib = import ./nix/lib.nix {inherit lib;};
+
     packages = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs) callPackage;

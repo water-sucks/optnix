@@ -290,7 +290,9 @@ func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) (option.E
 		output := cmdOutput.Stdout
 
 		if formatterCmd != "" {
-			output, _ = option.FormatNixValue(formatterCmd, output)
+			if formatted, err := option.FormatNixValue(formatterCmd, output); err == nil {
+				output = formatted
+			}
 		}
 
 		value := strings.TrimSpace(output)

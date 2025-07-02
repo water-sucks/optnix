@@ -1,4 +1,6 @@
-{lib}: let
+pkgs: let
+  inherit (pkgs) lib;
+
   parsePath = pathStr: lib.splitString "." pathStr;
 
   removeNestedAttrs = paths: set: lib.foldl' (s: p: removeAtPath (parsePath p) s) set paths;
@@ -31,7 +33,6 @@
   */
   mkOptionsList = {
     options,
-    pkgs,
     transform ? lib.id,
     excluded ? [],
   }: let
@@ -51,10 +52,7 @@
   @param  modules   list of modules containing options
   @return           a derivation that builds an options.json file
   */
-  mkOptionsListFromModules = {
-    modules,
-    pkgs,
-  }: let
+  mkOptionsListFromModules = {modules}: let
     eval'd = lib.evalModules {
       modules =
         modules
@@ -64,7 +62,6 @@
     };
   in
     mkOptionsList {
-      inherit pkgs;
       inherit (eval'd) options;
     };
 
@@ -72,12 +69,16 @@
     /*
     Create an options list JSON file from a Home Manager source list of modules.
 
+    This code is based on the implementation found directly in Home Manager's
+    documentation generation, without using nixosOptionsDoc.
+
+    If an options attribute set is exposed, prefer using that over this.
+
     @param  home-manager  path to a home-manager source (like from a flake input or tarball)
     @param  modules       list of extra modules containing options to include
     @return               a derivation that builds an options.json file
     */
     mkOptionsListFromHMSource = {
-      pkgs,
       home-manager,
       modules ? [],
     }: let
@@ -130,7 +131,7 @@
         }).options;
     in
       mkOptionsList {
-        inherit options pkgs;
+        inherit options;
       };
   };
 in {

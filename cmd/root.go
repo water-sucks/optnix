@@ -127,6 +127,8 @@ func CreateCommand() *cobra.Command {
 				return nil
 			}
 
+			inCompletionMode := cmd.CalledAs() == cobra.ShellCompRequestCmd
+
 			configLocations := append(config.DefaultConfigLocations, opts.Config...)
 
 			cfg, err := config.ParseConfig(configLocations...)
@@ -135,12 +137,14 @@ func CreateCommand() *cobra.Command {
 				return err
 			}
 
-			if err := cfg.Validate(); err != nil {
-				return err
+			if !inCompletionMode {
+				if err := cfg.Validate(); err != nil {
+					return err
+				}
 			}
 
 			if opts.Scope == "" {
-				if cfg.DefaultScope == "" {
+				if cfg.DefaultScope == "" && !inCompletionMode {
 					return cmdUtils.ErrorWithHint{
 						Msg:  "no scope was provided and no default scope is set in the configuration",
 						Hint: "either set a default configuration or specify one with -s",

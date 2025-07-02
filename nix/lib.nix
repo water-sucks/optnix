@@ -24,6 +24,21 @@ pkgs: let
       else set;
 
   /*
+  Combine together multiple option lists that were created using
+  any of the `mkOptionsList*` functions defined in this library.
+
+  @param  lists  list of options.json list derivations
+  @return        combined options.json file
+  */
+  combineLists = lists: let
+  in
+    pkgs.runCommand "options.json" {
+      nativeBuildInputs = [pkgs.jq];
+    } ''
+      jq --slurp add ${lib.concatMapStringsSep " " (drv: "${drv}") lists} > $out
+    '';
+
+  /*
   Create an options list JSON file from an options attribute set.
 
   @param  options   options attribute set to generate options list from
@@ -54,6 +69,7 @@ pkgs: let
   */
   mkOptionsListFromModules = {modules}: let
     eval'd = lib.evalModules {
+      inherit pkgs;
       modules =
         modules
         ++ [
@@ -72,7 +88,7 @@ pkgs: let
     This code is based on the implementation found directly in Home Manager's
     documentation generation, without using nixosOptionsDoc.
 
-    If an options attribute set is exposed, prefer using that over this.
+    If an options attribute set is exposed that can be evaluated, prefer using that over this.
 
     @param  home-manager  path to a home-manager source (like from a flake input or tarball)
     @param  modules       list of extra modules containing options to include
@@ -138,6 +154,7 @@ in {
   inherit
     removeAtPath
     removeNestedAttrs
+    combineLists
     mkOptionsList
     mkOptionsListFromModules
     hm

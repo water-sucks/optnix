@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -63,8 +64,8 @@ func completeScopes(cmd *cobra.Command, args []string, toComplete string) ([]str
 	cfg := config.FromContext(cmd.Context())
 
 	scopes := []string{}
-	for name := range cfg.Scopes {
-		scopes = append(scopes, name)
+	for name, scope := range cfg.Scopes {
+		scopes = append(scopes, fmt.Sprintf("%s\t%s", name, scope.Description))
 	}
 
 	return scopes, cobra.ShellCompDirectiveNoFileComp

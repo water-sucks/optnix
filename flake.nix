@@ -40,5 +40,7 @@
         ];
       };
     });
+
+    homeModules.optnix = import ./nix/modules/home-manager.nix self;
   };
 }

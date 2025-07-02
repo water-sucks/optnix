@@ -41,6 +41,7 @@
       };
     });
 
+    nixosModules.optnix = import ./nix/modules/nixos.nix self;
     homeModules.optnix = import ./nix/modules/home-manager.nix self;
   };
 }

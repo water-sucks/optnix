@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"unicode/utf8"
 
 	"github.com/fatih/color"
 	"github.com/sahilm/fuzzy"
@@ -53,6 +54,7 @@ type CmdOptions struct {
 	MinScore            int64
 	ValueOnly           bool
 	Scope               string
+	ListScopes          bool
 	GenerateCompletions string
 
 	OptionInput string
@@ -144,7 +146,7 @@ func CreateCommand() *cobra.Command {
 			}
 
 			if opts.Scope == "" {
-				if cfg.DefaultScope == "" && !inCompletionMode {
+				if cfg.DefaultScope == "" && !inCompletionMode && !opts.ListScopes {
 					return cmdUtils.ErrorWithHint{
 						Msg:  "no scope was provided and no default scope is set in the configuration",
 						Hint: "either set a default configuration or specify one with -s",
@@ -184,6 +186,7 @@ func CreateCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&opts.Scope, "scope", "s", "", "Scope `name` to use (required)")
 	cmd.Flags().BoolVarP(&opts.NonInteractive, "non-interactive", "n", false, "Do not show search TUI for options")
 	cmd.Flags().BoolVarP(&opts.JSON, "json", "j", false, "Output information in JSON format")
+	cmd.Flags().BoolVarP(&opts.ListScopes, "list-scopes", "l", false, "List available scopes and exit")
 	cmd.Flags().Int64VarP(&opts.MinScore, "min-score", "m", 0, "Minimum `score` threshold for matching")
 	cmd.Flags().StringSliceVarP(&opts.Config, "config", "c", nil, "Path to extra configuration `files` to load")
 	cmd.Flags().BoolVarP(&opts.ValueOnly, "value-only", "v", false, "Only show option values")
@@ -195,6 +198,71 @@ func CreateCommand() *cobra.Command {
 	_ = cmd.RegisterFlagCompletionFunc("completion", completeCompletionShells)
 
 	return &cmd
+}
+
+var scopesListHeader = []string{"Name", "Description", "Origin"}
+
+func centered(width int, s string) *bytes.Buffer {
+	var b bytes.Buffer
+	runeLen := utf8.RuneCountInString(s)
+
+	if runeLen >= width {
+		fmt.Fprint(&b, s)
+		return &b
+	}
+
+	padding := width - runeLen
+	left := padding / 2
+	right := padding - left
+
+	fmt.Fprintf(&b, "%s%s%s", strings.Repeat(" ", left), s, strings.Repeat(" ", right))
+	return &b
+}
+
+func listScopes(cfg *config.Config) {
+	const separator = " | "
+
+	data := make([][]string, 0, len(cfg.Scopes))
+
+	for s, v := range cfg.Scopes {
+		origin := cfg.FieldOrigin(fmt.Sprintf("scopes.%v", s))
+		data = append(data, []string{s, v.Description, origin})
+	}
+
+	colWidths := make([]int, len(scopesListHeader))
+
+	for _, row := range data {
+		for i, col := range row {
+			if len(col) > colWidths[i] {
+				colWidths[i] = len(col)
+			}
+		}
+	}
+
+	totalWidth := 0
+
+	for i, col := range scopesListHeader {
+		fmt.Print(centered(colWidths[i], col))
+		totalWidth += colWidths[i]
+
+		if i < len(scopesListHeader)-1 {
+			fmt.Print(separator)
+			totalWidth += len(separator)
+		}
+	}
+
+	fmt.Println("\n" + strings.Repeat("-", totalWidth))
+
+	for _, row := range data {
+		for i, col := range row {
+			format := fmt.Sprintf("%%-%ds", colWidths[i]) // e.g. %-10s
+			fmt.Printf(format, col)
+			if i < len(row)-1 {
+				fmt.Print(separator)
+			}
+		}
+		fmt.Println()
+	}
 }
 
 func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, error) {
@@ -313,6 +381,11 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 
 	log := logger.FromContext(cmd.Context())
 	cfg := config.FromContext(cmd.Context())
+
+	if opts.ListScopes {
+		listScopes(cfg)
+		return nil
+	}
 
 	scope, err := getScopeFromCfg(opts.Scope, cfg)
 	if err != nil {

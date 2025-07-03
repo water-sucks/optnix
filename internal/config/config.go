@@ -19,6 +19,11 @@ type Config struct {
 	FormatterCmd string `koanf:"formatter_cmd"`
 
 	Scopes map[string]Scope `koanf:"scopes"`
+
+	// Origins of a set configuration value, used for tracking
+	// when/where the most recent value of a field was set
+	// for debugging configurations.
+	fieldOrigins map[string]string
 }
 
 type Scope struct {
@@ -41,6 +46,8 @@ func NewConfig() *Config {
 func ParseConfig(location ...string) (*Config, error) {
 	k := koanf.New(".")
 
+	fieldOrigins := make(map[string]string)
+
 	for _, loc := range location {
 		if _, err := os.Stat(loc); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
@@ -50,12 +57,34 @@ func ParseConfig(location ...string) (*Config, error) {
 			return nil, err
 		}
 
-		if err := k.Load(file.Provider(loc), toml.Parser()); err != nil {
+		fileK := koanf.New(".")
+
+		err := fileK.Load(file.Provider(loc), toml.Parser())
+		if err != nil {
 			return nil, err
 		}
+
+		for _, key := range fileK.Keys() {
+			fieldOrigins[key] = loc
+		}
+
+		// Also load incomplete scope keys into the field origins, since
+		// scopes without proper definitions can technically exist.
+		if scopesMap, ok := fileK.Get("scopes").(map[string]interface{}); ok {
+			for scopeName := range scopesMap {
+				scopeKey := fmt.Sprintf("scopes.%s", scopeName)
+				fieldOrigins[scopeKey] = loc
+			}
+		}
+
+		if err := k.Merge(fileK); err != nil {
+			return nil, err
+		}
+
 	}
 
 	cfg := NewConfig()
+	cfg.fieldOrigins = fieldOrigins
 
 	if err := k.Unmarshal("", cfg); err != nil {
 		return nil, err
@@ -100,6 +129,15 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *Config) FieldOrigin(key string) (string, bool) {
+	if c.fieldOrigins == nil {
+		return "", false
+	}
+
+	loc, ok := c.fieldOrigins[key]
+	return loc, ok
 }
 
 var DefaultConfigLocations = []string{

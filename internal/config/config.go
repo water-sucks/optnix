@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/fatih/color"
 	"github.com/knadh/koanf/parsers/toml/v2"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
@@ -95,10 +96,26 @@ func ParseConfig(location ...string) (*Config, error) {
 
 var optionTemplateRegex = regexp.MustCompile(`{{\s*-?\s*\.Option\b[^}]*}}`)
 
+type ValidationError struct {
+	Msg    string
+	Origin string
+}
+
+func (e ValidationError) Error() string {
+	msg := e.Msg
+	if e.Origin != "" {
+		msg += "\n\n" + color.YellowString("hint: this setting was last defined in %v", e.Origin)
+	}
+	return msg
+}
+
 func (c *Config) Validate() error {
 	for s, v := range c.Scopes {
 		if v.OptionsListCmd == "" && v.OptionsListFile == "" {
-			return fmt.Errorf("no option list source defined for scope %v", s)
+			return ValidationError{
+				Msg:    fmt.Sprintf("no option list source defined for scope '%v'", s),
+				Origin: c.FieldOrigin(fmt.Sprintf("scopes.%v", s)),
+			}
 		}
 	}
 
@@ -110,34 +127,46 @@ func (c *Config) Validate() error {
 				break
 			}
 		}
+
 		if !foundScope {
-			return fmt.Errorf("default config %v not found", c.DefaultScope)
+			return ValidationError{
+				Msg:    fmt.Sprintf("default scope '%v' not found", c.DefaultScope),
+				Origin: c.FieldOrigin("default_scope"),
+			}
 		}
 	}
 
-	for n, s := range c.Scopes {
-		if s.EvaluatorCmd == "" {
+	for s, v := range c.Scopes {
+		if v.EvaluatorCmd == "" {
 			continue
 		}
 
-		matches := optionTemplateRegex.FindAllString(s.EvaluatorCmd, -1)
-		if len(matches) == 0 {
-			return fmt.Errorf("evaluator for scope %v does not contain the placeholder {{ .Option }}", n)
-		} else if len(matches) > 1 {
-			return fmt.Errorf("multiple instances of {{ .Option }} placeholder in evaluator for scope %v", n)
+		matches := optionTemplateRegex.FindAllString(v.EvaluatorCmd, -1)
+		if len(matches) != 1 {
+			origin := c.FieldOrigin(fmt.Sprintf("scopes.%v.evaluator", s))
+			if len(matches) == 0 {
+				return ValidationError{
+					Msg:    fmt.Sprintf("evaluator for scope '%v' does not contain the placeholder {{ .Option }}", s),
+					Origin: origin,
+				}
+			} else {
+				return ValidationError{
+					Msg:    fmt.Sprintf("multiple instances of {{ .Option }} placeholder in evaluator for scope '%v'", s),
+					Origin: origin,
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-func (c *Config) FieldOrigin(key string) (string, bool) {
+func (c *Config) FieldOrigin(key string) string {
 	if c.fieldOrigins == nil {
-		return "", false
+		return ""
 	}
 
-	loc, ok := c.fieldOrigins[key]
-	return loc, ok
+	return c.fieldOrigins[key]
 }
 
 var DefaultConfigLocations = []string{

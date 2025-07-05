@@ -30,13 +30,16 @@
 
     devShells = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      inherit (pkgs) go golangci-lint;
+      inherit (pkgs) go golangci-lint mdbook prettier;
     in {
       default = pkgs.mkShell {
         name = "optnix-shell";
         buildInputs = [
           go
           golangci-lint
+
+          mdbook
+          prettier
         ];
       };
     });

@@ -10,3 +10,7 @@
 
 # Ignore any sample .toml files used for configuration
 /*.toml
+
+# Generated site artifacts
+/doc/book
+/site

@@ -1,0 +1,5 @@
+[book]
+authors = ["Varun Narravula"]
+language = "en"
+src = "src"
+title = "optnix - a fast Nix options searcher"

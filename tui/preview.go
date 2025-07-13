@@ -47,10 +47,7 @@ func (m PreviewModel) SetOption(opt *option.NixosOption) PreviewModel {
 	return m
 }
 
-var (
-	titleColor  = color.New(color.Bold)
-	italicColor = color.New(color.Italic)
-)
+var titleColor = color.New(color.Bold)
 
 func (m PreviewModel) Update(msg tea.Msg) (PreviewModel, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -110,7 +107,7 @@ func (m PreviewModel) renderOptionView() string {
 	sb.WriteString("\n\n")
 
 	if m.option == nil {
-		sb.WriteString("No option selected.")
+		sb.WriteString("\n  No option selected.")
 		return sb.String()
 	}
 

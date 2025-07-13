@@ -270,11 +270,19 @@ func (m Model) View() string {
 	)
 }
 
-func OptionTUI(options option.NixosOptionSource, minScore int64, debounceTime int64, evaluator option.EvaluatorFunc, initialInput string) error {
+type OptionTUIArgs struct {
+	Options      option.NixosOptionSource
+	MinScore     int64
+	DebounceTime int64
+	Evaluator    option.EvaluatorFunc
+	InitialInput string
+}
+
+func OptionTUI(args OptionTUIArgs) error {
 	closeLogFile, _ := cmdUtils.ConfigureBubbleTeaLogger("option-tui")
 	defer closeLogFile()
 
-	p := tea.NewProgram(NewModel(options, minScore, debounceTime, evaluator, initialInput), tea.WithAltScreen())
+	p := tea.NewProgram(NewModel(args.Options, args.MinScore, args.DebounceTime, args.Evaluator, args.InitialInput), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		return err

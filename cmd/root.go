@@ -419,7 +419,13 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 
 	if !opts.NonInteractive {
 		spinner.Stop()
-		return tui.OptionTUI(options, cfg.MinScore, cfg.DebounceTime, evaluator, opts.OptionInput)
+		return tui.OptionTUI(tui.OptionTUIArgs{
+			Options:      options,
+			MinScore:     cfg.MinScore,
+			DebounceTime: cfg.DebounceTime,
+			Evaluator:    evaluator,
+			InitialInput: opts.OptionInput,
+		})
 	}
 
 	spinner.UpdateMessage(fmt.Sprintf("Finding option %v...", opts.OptionInput))

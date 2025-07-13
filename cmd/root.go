@@ -421,6 +421,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		spinner.Stop()
 		return tui.OptionTUI(tui.OptionTUIArgs{
 			Options:      options,
+			ScopeName:    opts.Scope,
 			MinScore:     cfg.MinScore,
 			DebounceTime: cfg.DebounceTime,
 			Evaluator:    evaluator,

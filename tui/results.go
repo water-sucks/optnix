@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,6 +25,8 @@ var (
 )
 
 type ResultListModel struct {
+	title string
+
 	options  option.NixosOptionSource
 	filtered []fuzzy.Match
 
@@ -36,8 +39,14 @@ type ResultListModel struct {
 	height int
 }
 
-func NewResultListModel(options option.NixosOptionSource) ResultListModel {
+func NewResultListModel(options option.NixosOptionSource, scopeName string) ResultListModel {
+	title := "Available Options"
+	if scopeName != "" {
+		title = fmt.Sprintf("Available Options (%v)", scopeName)
+	}
+
 	return ResultListModel{
+		title:   title,
 		options: options,
 	}
 }
@@ -152,7 +161,7 @@ func (m ResultListModel) Update(msg tea.Msg) (ResultListModel, tea.Cmd) {
 }
 
 func (m ResultListModel) View() string {
-	title := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, titleStyle.Render("Results"))
+	title := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, titleStyle.Render(m.title))
 
 	height := m.visibleResultRows()
 

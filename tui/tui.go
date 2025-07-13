@@ -193,6 +193,7 @@ func (m Model) runSearch(query string) Model {
 	slices.Reverse(m.filtered)
 
 	m.results = m.results.
+		SetQuery(query).
 		SetResultList(m.filtered).
 		SetSelectedIndex(len(m.filtered) - 1)
 

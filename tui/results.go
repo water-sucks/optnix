@@ -26,6 +26,7 @@ var (
 type ResultListModel struct {
 	options  option.NixosOptionSource
 	filtered []fuzzy.Match
+	input    string
 
 	focused bool
 
@@ -44,6 +45,11 @@ func NewResultListModel(options option.NixosOptionSource) ResultListModel {
 
 func (m ResultListModel) SetResultList(matches []fuzzy.Match) ResultListModel {
 	m.filtered = matches
+	return m
+}
+
+func (m ResultListModel) SetQuery(input string) ResultListModel {
+	m.input = input
 	return m
 }
 
@@ -193,7 +199,15 @@ func (m ResultListModel) View() string {
 
 		line := style.Width(m.width).MaxHeight(1).Render(b.String())
 		lines = append(lines, line)
+	}
 
+	if len(m.filtered) == 0 && len(lines) > 2 {
+		inputLen := len(m.input)
+		if inputLen > 3 {
+			lines[2] = "  No results found."
+		} else if inputLen > 0 {
+			lines[2] = "  Please provide more precise search terms."
+		}
 	}
 
 	body := strings.Join(lines, "\n")

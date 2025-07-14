@@ -3,3 +3,7 @@ authors = ["Varun Narravula"]
 language = "en"
 src = "src"
 title = "optnix - a fast Nix options searcher"
+
+[output.html]
+git-repository-url = "https://github.com/water-sucks/optnix"
+edit-url-template = "https://github.com/water-sucks/optnix/edit/main/book/{path}"

@@ -19,4 +19,6 @@ in {
   nixosModules.optnix = flakeSelf.nixosModules.optnix;
   darwinModules.optnix = flakeSelf.darwinModules.optnix;
   homeModules.optnix = flakeSelf.homeModules.optnix;
+
+  mkLib = import ./nix/lib.nix;
 }

@@ -115,6 +115,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			if m.mode != ViewModeEvalValue {
+				return m, tea.Quit
+			}
 		}
 	case tea.WindowSizeMsg:
 		m = m.updateWindowSize(msg.Width, msg.Height)

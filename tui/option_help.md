@@ -1,0 +1,53 @@
+# Concepts
+
+This application consists of three views:
+
+- **Main View** :: Search and preview options
+- **Help View** :: Display this help page
+- **Value View** :: Show the current value of an option
+
+A **purple border** indicates the active (focused) view. Keybinds will only work
+in the context of the currently active view.
+
+To quit this application, press `Ctrl+C` or `Esc` from the main view.
+
+---
+
+## Main View
+
+The main view appears when the application starts. It contains two _windows_:
+
+- **Search Window** (left) :: User types to see available options
+- **Preview Window** (right) :: Displays info about the selected option
+
+Press `<Tab>` to switch focus between the two windows.
+
+Press `<Enter>` to view the current value of a selected option, if available;
+this will open the **value view**.
+
+### Search Window
+
+Type to filter the list of options.
+
+Use the `Up` + `Down` arrows to navigate the results. As you move through the
+list, the **Preview Window** updates automatically.
+
+### Preview Window
+
+Shows detailed information about the selected option.
+
+Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
+
+## Value View
+
+Displays the current value of the selected option (if it can be evaluated).
+
+Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
+
+Press `<Esc>` or `q` to close this window.
+
+## Help View
+
+Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
+
+Press `<Esc>` or `q` to close this window.

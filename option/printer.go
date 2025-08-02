@@ -26,7 +26,7 @@ func (o *NixosOption) PrettyPrint(value *ValuePrinterInput) string {
 	if desc == "" {
 		desc = italicStyle.Sprint("(none)")
 	} else {
-		d, err := markdownRenderer.Render(desc)
+		d, err := renderer.Render(desc)
 		if err != nil {
 			desc = italicStyle.Sprintf("warning: failed to render description: %v\n", err) + desc
 		} else {
@@ -88,10 +88,10 @@ func (o *NixosOption) PrettyPrint(value *ValuePrinterInput) string {
 
 var (
 	markdownRenderIndentWidth uint = 0
-	markdownRenderer          *glamour.TermRenderer
+	renderer                       = NewMarkdownRenderer()
 )
 
-func init() {
+func NewMarkdownRenderer() *glamour.TermRenderer {
 	glamourStyles.DarkStyleConfig.Document.Margin = &markdownRenderIndentWidth
 
 	r, _ := glamour.NewTermRenderer(
@@ -99,7 +99,7 @@ func init() {
 		glamour.WithWordWrap(80),
 	)
 
-	markdownRenderer = r
+	return r
 }
 
 var annotationsToRemove = []string{

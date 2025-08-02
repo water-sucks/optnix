@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"os/exec"
 	"slices"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,6 +49,7 @@ type Model struct {
 	results ResultListModel
 	preview PreviewModel
 	eval    EvalValueModel
+	help    HelpModel
 }
 
 type ViewMode int
@@ -57,6 +57,7 @@ type ViewMode int
 const (
 	ViewModeSearch = iota
 	ViewModeEvalValue
+	ViewModeHelp
 )
 
 type ChangeViewModeMsg ViewMode
@@ -83,6 +84,7 @@ func NewModel(
 	results := NewResultListModel(options, scope).
 		SetFocused(true)
 	eval := NewEvalValueModel(evaluator)
+	help := NewHelpModel()
 
 	return Model{
 		mode:  ViewModeSearch,
@@ -96,6 +98,7 @@ func NewModel(
 		preview: preview,
 		search:  search,
 		eval:    eval,
+		help:    help,
 	}
 }
 
@@ -121,6 +124,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Always forward resize events to components that need them.
 		m.eval, _ = m.eval.Update(msg)
+		m.help, _ = m.help.Update(msg)
 
 		return m, nil
 
@@ -138,6 +142,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var evalCmd tea.Cmd
 		m.eval, evalCmd = m.eval.Update(msg)
 		return m, evalCmd
+	case ViewModeHelp:
+		var helpCmd tea.Cmd
+		m.help, helpCmd = m.help.Update(msg)
+		return m, helpCmd
 	}
 
 	return m, nil
@@ -151,7 +159,9 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 			m = m.toggleFocus()
 
 		case "ctrl+g":
-			return m, m.openHelpManPage()
+			return m, func() tea.Msg {
+				return ChangeViewModeMsg(ViewModeHelp)
+			}
 		}
 	case RunSearchMsg:
 		m = m.runSearch(msg.Query)
@@ -176,15 +186,6 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 	cmds = append(cmds, previewCmd)
 
 	return m, tea.Batch(cmds...)
-}
-
-type ManFinishedMsg struct{}
-
-func (m Model) openHelpManPage() tea.Cmd {
-	cmd := exec.Command("man", "nixos-cli-option-tui")
-	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return ManFinishedMsg{}
-	})
 }
 
 func (m Model) runSearch(query string) Model {
@@ -254,6 +255,8 @@ func (m Model) View() string {
 	switch m.mode {
 	case ViewModeEvalValue:
 		return marginStyle.Render(m.eval.View())
+	case ViewModeHelp:
+		return marginStyle.Render(m.help.View())
 	}
 
 	results := m.results.View()

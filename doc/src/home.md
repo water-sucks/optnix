@@ -8,7 +8,7 @@ There are multiple module systems that Nix users use on a daily basis:
 
 - [NixOS](https://github.com/nixos/nixpkgs) (the most well-known one)
 - [Home Manager](https://github.com/nix-community/home-manager)
-- [`nix-darwin`](https://github.com/LnL7/nix-darwin)
+- [`nix-darwin`](https://github.com/nix-darwin/nix-darwin)
 - [`flake-parts`](https://github.com/hercules-ci/flake-parts)
 
 These systems can have difficult-to-navigate documentation, especially for

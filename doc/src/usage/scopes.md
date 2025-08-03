@@ -22,12 +22,12 @@ An example of the fields for a scope in `optnix` can be found on the
 [configuration page](./configuration.md), and real configuration examples can be
 found on the [recipes page](../recipes/index.md).
 
-#### `description`
+#### `scopes.<name>.description`
 
 A small description of what the purpose of this scope is. Optional, but useful
 for command-line completion and listing scopes more descriptively.
 
-#### `options-list-{file,cmd}`
+#### `scopes.<name>.options-list-{file,cmd}`
 
 The option list can be specified in two different ways:
 
@@ -51,7 +51,7 @@ almost always faster than running the equivalent `options-list-cmd`, since
 Generating options list files can be done using the `optnix` Nix library, and
 examples can be seen on the [recipes page](../recipes/index.md).
 
-#### `evaluator`
+#### `scopes.<name>.evaluator`
 
 An **evaluator** is a command template that can be used to evaluate a Nix
 configuration to retrieve values.

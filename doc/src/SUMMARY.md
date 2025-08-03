@@ -14,4 +14,5 @@
   - [`nix-darwin`](recipes/nix-darwin.md)
   - [`home-manager`](recipes/home-manager.md)
   - [`flake-parts`](recipes/flake-parts.md)
+- [API Reference](./reference.md)
 - [Comparisons](comparisons.md)

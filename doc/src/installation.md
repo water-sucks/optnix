@@ -81,7 +81,8 @@ Alongside these modules is a function `mkLib`; this function is the entry point
 for the `optnix` Nix library for generating lists.
 
 More information on these resources can be found on the
-[module page](./usage/module.md).
+[module page](./usage/module.md), as well as the [API Reference](./reference.md)
+for what functions are available in the `optnix` library.
 
 Additionally, some examples configuring `optnix` for different module systems
 are available on the [recipes page](./recipes/index.md).

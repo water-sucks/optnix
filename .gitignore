@@ -13,4 +13,5 @@
 
 # Generated site artifacts
 /doc/book
+/doc/src/usage/generated-module.md
 /site

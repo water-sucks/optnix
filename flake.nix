@@ -8,13 +8,15 @@
       url = "github:edolstra/flake-compat";
       flake = false;
     };
+
+    nix-options-doc.url = "github:Thunderbottom/nix-options-doc/v0.2.0";
   };
 
   outputs = {
     self,
     nixpkgs,
     ...
-  }: let
+  } @ inputs: let
     inherit (nixpkgs) lib;
     eachSystem = lib.genAttrs lib.systems.flakeExposed;
   in {
@@ -31,6 +33,7 @@
     devShells = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs) go golangci-lint mdbook prettier;
+      nix-options-doc = inputs.nix-options-doc.packages.${system}.default;
     in {
       default = pkgs.mkShell {
         name = "optnix-shell";
@@ -40,6 +43,7 @@
 
           mdbook
           prettier
+          nix-options-doc
         ];
       };
     });

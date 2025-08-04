@@ -9,6 +9,7 @@ A simple `nix-darwin` module showcasing the `programs.optnix` option and using
 
 ```nix
 { options, pkgs, ... }: let
+  # Assume `optnix` is correctly instantiated.
   optnixLib = inputs.optnix.mkLib pkgs;
 in {
   programs.optnix = {

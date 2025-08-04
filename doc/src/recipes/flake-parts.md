@@ -27,6 +27,30 @@ Use the following flake module code to expose a flake attribute called
 }
 ```
 
+OR, if you do not want to copy-paste code, use the
+`optnix.flakeModules.flake-parts-doc` in an import like so:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+    flake-parts.url = "github:hercules-ci/flake-parts";
+
+    optnix.url = "github:water-sucks/optnix";
+  };
+
+  outputs = { optnix, ... }@inputs:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [
+        optnix.flakeModules.flake-parts-doc
+      ];
+
+      # ...
+    };
+}
+```
+
 Then, configure an `optnix.toml` (in the same directory as the top-level
 `flake.nix`) for this is rather trivial:
 

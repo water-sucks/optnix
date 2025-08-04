@@ -10,13 +10,13 @@ GENERATED_MODULE_DOCS := doc/src/usage/generated-module.md
 NIX_MODULE := nix/modules/nixos.nix
 GITHUB_URL := https://github.com/water-sucks/optnix/blob/$(GIT_REVISION)/$(NIX_MODULE)
 
-MAN_PAGE := doc/man/optnix.1.scd
-GENERATED_MANPAGE := optnix.1
+MANPAGES_SRC := $(wildcard doc/man/*.scd)
+MANPAGES := $(patsubst doc/man/%.scd,%,$(MANPAGES_SRC))
 
 # Disable CGO by default. This should be a static executable.
 CGO_ENABLED ?= 0
 
-all: build
+all: build $(MANPAGES)
 
 .PHONY: build
 build:
@@ -27,6 +27,7 @@ build:
 clean:
 	@echo "cleaning up..."
 	go clean
+	rm -rf ./nixos site/ $(MANPAGES)
 
 .PHONY: test
 test:
@@ -42,12 +43,12 @@ serve-site: $(GENERATED_MODULE_DOCS)
 	mdbook serve ./doc --open
 
 $(GENERATED_MODULE_DOCS): $(NIX_MODULE)
-	nix-options-doc -f markdown -p $(NIX_MODULE) --strip-prefix | \
+	nix-options-doc -f markdown -p $< --strip-prefix | \
 		tail -n +4 | \
 		sed -E 's|\(#L([0-9]+)\)|('"$(GITHUB_URL)"'#L\1)|g' \
-		> $(GENERATED_MODULE_DOCS)
+		> $@
 
-man: $(GENERATED_MANPAGE)
+man: $(MANPAGES)
 
-$(GENERATED_MANPAGE): $(MAN_PAGE)
-	scdoc < $(MAN_PAGE) > $(GENERATED_MANPAGE)
+%: doc/man/%.scd
+	scdoc < $< > $@

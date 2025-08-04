@@ -4,6 +4,7 @@
   installShellFiles,
   buildGoModule,
   nix-gitignore,
+  scdoc,
 }:
 buildGoModule (finalAttrs: {
   pname = "optnix";
@@ -12,7 +13,7 @@ buildGoModule (finalAttrs: {
 
   vendorHash = "sha256-/rV21mX6VrJj39M6dBw4ubp6+O47hxeLn0ZcsG6Ujno=";
 
-  nativeBuildInputs = [installShellFiles];
+  nativeBuildInputs = [installShellFiles scdoc];
 
   env = {
     CGO_ENABLED = 0;
@@ -21,7 +22,7 @@ buildGoModule (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-    make all
+    make all man
     runHook postBuild
   '';
 
@@ -29,6 +30,7 @@ buildGoModule (finalAttrs: {
     runHook preInstall
 
     install -Dm755 ./optnix -t $out/bin
+    install -Dm755 ./optnix.1 -t $out/share/man/man1
 
     runHook postInstall
   '';

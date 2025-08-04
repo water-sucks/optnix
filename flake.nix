@@ -32,7 +32,7 @@
 
     devShells = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      inherit (pkgs) go golangci-lint mdbook prettier;
+      inherit (pkgs) go golangci-lint mdbook prettier scdoc;
       nix-options-doc = inputs.nix-options-doc.packages.${system}.default;
     in {
       default = pkgs.mkShell {
@@ -43,6 +43,7 @@
 
           mdbook
           prettier
+          scdoc
           nix-options-doc
         ];
       };

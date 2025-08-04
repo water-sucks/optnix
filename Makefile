@@ -10,6 +10,9 @@ GENERATED_MODULE_DOCS := doc/src/usage/generated-module.md
 NIX_MODULE := nix/modules/nixos.nix
 GITHUB_URL := https://github.com/water-sucks/optnix/blob/$(GIT_REVISION)/$(NIX_MODULE)
 
+MAN_PAGE := doc/man/optnix.1.scd
+GENERATED_MANPAGE := optnix.1
+
 # Disable CGO by default. This should be a static executable.
 CGO_ENABLED ?= 0
 
@@ -43,3 +46,8 @@ $(GENERATED_MODULE_DOCS): $(NIX_MODULE)
 		tail -n +4 | \
 		sed -E 's|\(#L([0-9]+)\)|('"$(GITHUB_URL)"'#L\1)|g' \
 		> $(GENERATED_MODULE_DOCS)
+
+man: $(GENERATED_MANPAGE)
+
+$(GENERATED_MANPAGE): $(MAN_PAGE)
+	scdoc < $(MAN_PAGE) > $(GENERATED_MANPAGE)

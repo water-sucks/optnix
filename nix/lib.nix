@@ -133,11 +133,17 @@ pkgs: let
         ];
       };
 
+      dummyHomeUserModule = {
+        home.stateVersion = pkgs.lib.trivial.release;
+        home.homeDirectory = "/home/dummy";
+      };
+
       allModules =
         hmModules
         ++ modules
         ++ [
           scrubbedPkgsModule
+          dummyHomeUserModule
         ];
 
       options =

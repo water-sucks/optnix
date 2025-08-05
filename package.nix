@@ -30,7 +30,9 @@ buildGoModule (finalAttrs: {
     runHook preInstall
 
     install -Dm755 ./optnix -t $out/bin
+
     install -Dm755 ./optnix.1 -t $out/share/man/man1
+    install -Dm755 ./optnix.toml.5 -t $out/share/man/man5
 
     runHook postInstall
   '';

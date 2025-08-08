@@ -27,14 +27,6 @@ type Config struct {
 	fieldOrigins map[string]string
 }
 
-type Scope struct {
-	Name            string `koanf:"-"`
-	Description     string `koanf:"description"`
-	OptionsListFile string `koanf:"options-list-file"`
-	OptionsListCmd  string `koanf:"options-list-cmd"`
-	EvaluatorCmd    string `koanf:"evaluator"`
-}
-
 func NewConfig() *Config {
 	return &Config{
 		MinScore:     1,

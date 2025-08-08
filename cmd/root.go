@@ -255,7 +255,7 @@ func listScopes(cfg *config.Config) {
 
 	for _, row := range data {
 		for i, col := range row {
-			format := fmt.Sprintf("%%-%ds", colWidths[i]) // e.g. %-10s
+			format := fmt.Sprintf("%%-%ds", colWidths[i])
 			fmt.Printf(format, col)
 			if i < len(row)-1 {
 				fmt.Print(separator)
@@ -263,72 +263,6 @@ func listScopes(cfg *config.Config) {
 		}
 		fmt.Println()
 	}
-}
-
-func runGenerateOptionListCmd(commandStr string) (option.NixosOptionSource, error) {
-	cmdOutput, err := utils.ExecShellAndCaptureOutput(commandStr)
-	if err != nil {
-		return nil, err
-	}
-
-	var l option.NixosOptionSource
-	err = json.Unmarshal([]byte(cmdOutput.Stdout), &l)
-	if err != nil {
-		return nil, err
-	}
-
-	return l, nil
-}
-
-func getScopeFromCfg(name string, cfg *config.Config) (*config.Scope, error) {
-	if len(cfg.Scopes) == 0 {
-		return nil, fmt.Errorf("no scopes are defined in the configuration")
-	}
-
-	var scope *config.Scope
-	for s, v := range cfg.Scopes {
-		if s == name {
-			scope = &v
-			break
-		}
-	}
-
-	if scope == nil {
-		return nil, fmt.Errorf("scope '%v' not found in configuration", name)
-	}
-
-	return scope, nil
-}
-
-func getOptionListFromScope(log *logger.Logger, scopeName string, scope *config.Scope) (option.NixosOptionSource, error) {
-	if scope.OptionsListFile != "" {
-		optionsFile, err := os.Open(scope.OptionsListFile)
-		if err != nil {
-			log.Errorf("failed to open options file: %v", err)
-		} else {
-			defer func() { _ = optionsFile.Close() }()
-
-			l, err := option.LoadOptions(optionsFile)
-			if err != nil {
-				log.Errorf("failed to load options using file strategy: %v", err)
-				log.Info("attempting to load using command strategy instead")
-			} else {
-				return l, nil
-			}
-		}
-	}
-
-	if scope.OptionsListCmd != "" {
-		l, err := runGenerateOptionListCmd(scope.OptionsListCmd)
-		if err != nil {
-			log.Errorf("failed to run options cmd: %v", err)
-			return nil, err
-		}
-
-		return l, nil
-	}
-
-	return nil, fmt.Errorf("no options found through all strategies for scope '%v'", scopeName)
 }
 
 func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) (option.EvaluatorFunc, error) {
@@ -387,8 +321,9 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		return nil
 	}
 
-	scope, err := getScopeFromCfg(opts.Scope, cfg)
-	if err != nil {
+	scope, ok := cfg.Scopes[opts.Scope]
+	if !ok {
+		err := fmt.Errorf("scope '%v' not found in configuration", opts.Scope)
 		log.Errorf("%v", err)
 		return err
 	}
@@ -405,13 +340,14 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 
 	spinner.UpdateMessage("Loading options...")
 
-	options, err := getOptionListFromScope(log, opts.Scope, scope)
+	options, err := scope.Load()
 	if err != nil {
 		spinner.Stop()
+		log.Errorf("%v", err)
 		return err
 	}
 
-	evaluator, err := constructEvaluatorFromScope(cfg.FormatterCmd, scope)
+	evaluator, err := constructEvaluatorFromScope(cfg.FormatterCmd, &scope)
 	if err != nil {
 		log.Errorf("failed to construct evaluator: %v", err)
 		log.Warn("will not be able to evaluate values properly, still proceeding")

@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/water-sucks/optnix/internal/config"
-	"github.com/water-sucks/optnix/internal/logger"
 )
 
 func GenerateCompletions(cmd *cobra.Command, shell string) {
@@ -32,14 +31,13 @@ func completeOptionsFromScope(scopeName *string) cobra.CompletionFunc {
 		}
 
 		cfg := config.FromContext(cmd.Context())
-		log := logger.FromContext(cmd.Context())
 
-		scope, err := getScopeFromCfg(*scopeName, cfg)
-		if err != nil {
+		scope, ok := cfg.Scopes[*scopeName]
+		if !ok {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		options, err := getOptionListFromScope(log, *scopeName, scope)
+		options, err := scope.Load()
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

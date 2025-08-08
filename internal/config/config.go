@@ -28,6 +28,7 @@ type Config struct {
 }
 
 type Scope struct {
+	Name            string `koanf:"-"`
 	Description     string `koanf:"description"`
 	OptionsListFile string `koanf:"options-list-file"`
 	OptionsListCmd  string `koanf:"options-list-cmd"`
@@ -89,6 +90,11 @@ func ParseConfig(location ...string) (*Config, error) {
 
 	if err := k.Unmarshal("", cfg); err != nil {
 		return nil, err
+	}
+
+	for name, scope := range cfg.Scopes {
+		scope.Name = name
+		cfg.Scopes[name] = scope
 	}
 
 	return cfg, nil

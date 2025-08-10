@@ -349,6 +349,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 			MinScore:          cfg.MinScore,
 			DebounceTime:      cfg.DebounceTime,
 			InitialInput:      opts.OptionInput,
+			LogFileName:       "optnix",
 		})
 	}
 

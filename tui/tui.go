@@ -304,11 +304,14 @@ type OptionTUIArgs struct {
 	MinScore          int64
 	DebounceTime      int64
 	InitialInput      string
+	LogFileName       string
 }
 
 func OptionTUI(args OptionTUIArgs) error {
-	closeLogFile, _ := cmdUtils.ConfigureBubbleTeaLogger("option-tui")
-	defer closeLogFile()
+	if args.LogFileName != "" {
+		closeLogFile, _ := cmdUtils.ConfigureBubbleTeaLogger(args.LogFileName)
+		defer closeLogFile()
+	}
 
 	m, err := NewModel(args.Scopes, args.SelectedScopeName, args.MinScore, args.DebounceTime, args.InitialInput)
 	if err != nil {

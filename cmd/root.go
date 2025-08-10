@@ -265,14 +265,29 @@ func listScopes(cfg *config.Config) {
 	}
 }
 
-func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) (option.EvaluatorFunc, error) {
+func constructScopeFromConfig(scope *config.Scope, formatterCmd string) option.Scope {
+	loader := func() (option.NixosOptionSource, error) {
+		return scope.Load()
+	}
+
+	evaluator := constructEvaluatorFromScope(formatterCmd, scope)
+
+	return option.Scope{
+		Name:        scope.Name,
+		Description: scope.Description,
+		Loader:      loader,
+		Evaluator:   evaluator,
+	}
+}
+
+func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) option.EvaluatorFunc {
 	if s.EvaluatorCmd == "" {
-		return nil, nil
+		return nil
 	}
 
 	tmpl, err := template.New("eval").Parse(s.EvaluatorCmd)
 	if err != nil {
-		return nil, err
+		panic(fmt.Sprintf("evaluator should have been verified as valid at this point: %v", err))
 	}
 
 	return func(optionName string) (string, error) {
@@ -304,7 +319,7 @@ func constructEvaluatorFromScope(formatterCmd string, s *config.Scope) (option.E
 		value := strings.TrimSpace(output)
 
 		return value, nil
-	}, nil
+	}
 }
 
 func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
@@ -321,8 +336,32 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		return nil
 	}
 
-	scope, ok := cfg.Scopes[opts.Scope]
-	if !ok {
+	if !opts.NonInteractive {
+		scopes := make([]option.Scope, 0, len(cfg.Scopes))
+		for _, scope := range cfg.Scopes {
+			actualScope := constructScopeFromConfig(&scope, cfg.FormatterCmd)
+			scopes = append(scopes, actualScope)
+		}
+
+		return tui.OptionTUI(tui.OptionTUIArgs{
+			Scopes:            scopes,
+			SelectedScopeName: opts.Scope,
+			MinScore:          cfg.MinScore,
+			DebounceTime:      cfg.DebounceTime,
+			InitialInput:      opts.OptionInput,
+		})
+	}
+
+	var scope *option.Scope
+	for _, s := range cfg.Scopes {
+		if opts.Scope == s.Name {
+			actualScope := constructScopeFromConfig(&s, cfg.FormatterCmd)
+			scope = &actualScope
+			break
+		}
+	}
+
+	if scope == nil {
 		err := fmt.Errorf("scope '%v' not found in configuration", opts.Scope)
 		log.Errorf("%v", err)
 		return err
@@ -340,29 +379,11 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 
 	spinner.UpdateMessage("Loading options...")
 
-	options, err := scope.Load()
+	options, err := scope.Loader()
 	if err != nil {
 		spinner.Stop()
 		log.Errorf("%v", err)
 		return err
-	}
-
-	evaluator, err := constructEvaluatorFromScope(cfg.FormatterCmd, &scope)
-	if err != nil {
-		log.Errorf("failed to construct evaluator: %v", err)
-		log.Warn("will not be able to evaluate values properly, still proceeding")
-	}
-
-	if !opts.NonInteractive {
-		spinner.Stop()
-		return tui.OptionTUI(tui.OptionTUIArgs{
-			Options:      options,
-			ScopeName:    opts.Scope,
-			MinScore:     cfg.MinScore,
-			DebounceTime: cfg.DebounceTime,
-			Evaluator:    evaluator,
-			InitialInput: opts.OptionInput,
-		})
 	}
 
 	spinner.UpdateMessage(fmt.Sprintf("Finding option %v...", opts.OptionInput))
@@ -377,8 +398,8 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 		var evaluatedValue string
 		var evalErr error
 
-		if evaluator != nil {
-			evaluatedValue, evalErr = evaluator(o.Name)
+		if scope.Evaluator != nil {
+			evaluatedValue, evalErr = scope.Evaluator(o.Name)
 		} else {
 			evaluatedValue = "no evaluator configured for this scope"
 		}

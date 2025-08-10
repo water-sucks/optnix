@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"slices"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,6 +38,7 @@ type Model struct {
 	focus FocusArea
 	mode  ViewMode
 
+	scopes  []option.Scope
 	options option.NixosOptionSource
 
 	filtered []fuzzy.Match
@@ -70,26 +72,43 @@ const (
 )
 
 func NewModel(
-	options option.NixosOptionSource,
-	scope string,
+	scopes []option.Scope,
+	selectedScope string,
 	minScore int64,
 	debounceTime int64,
-	evaluator option.EvaluatorFunc,
 	initialInput string,
-) Model {
+) (*Model, error) {
+	var scope *option.Scope
+	for _, s := range scopes {
+		if selectedScope == s.Name {
+			scope = &s
+			break
+		}
+	}
+
+	if scope == nil {
+		return nil, fmt.Errorf("scope '%v' not found in configuration", selectedScope)
+	}
+
+	options, err := scope.Loader()
+	if err != nil {
+		return nil, err
+	}
+
 	preview := NewPreviewModel()
 	search := NewSearchBarModel(len(options), debounceTime).
 		SetFocused(true).
 		SetValue(initialInput)
-	results := NewResultListModel(options, scope).
+	results := NewResultListModel(options, scope.Name).
 		SetFocused(true)
-	eval := NewEvalValueModel(evaluator)
+	eval := NewEvalValueModel(scope.Evaluator)
 	help := NewHelpModel()
 
-	return Model{
+	return &Model{
 		mode:  ViewModeSearch,
 		focus: FocusAreaResults,
 
+		scopes:  scopes,
 		options: options,
 
 		minScore: minScore,
@@ -99,7 +118,7 @@ func NewModel(
 		search:  search,
 		eval:    eval,
 		help:    help,
-	}
+	}, nil
 }
 
 func (m Model) Init() tea.Cmd {
@@ -280,19 +299,23 @@ func (m Model) View() string {
 }
 
 type OptionTUIArgs struct {
-	Options      option.NixosOptionSource
-	ScopeName    string
-	MinScore     int64
-	DebounceTime int64
-	Evaluator    option.EvaluatorFunc
-	InitialInput string
+	Scopes            []option.Scope
+	SelectedScopeName string
+	MinScore          int64
+	DebounceTime      int64
+	InitialInput      string
 }
 
 func OptionTUI(args OptionTUIArgs) error {
 	closeLogFile, _ := cmdUtils.ConfigureBubbleTeaLogger("option-tui")
 	defer closeLogFile()
 
-	p := tea.NewProgram(NewModel(args.Options, args.ScopeName, args.MinScore, args.DebounceTime, args.Evaluator, args.InitialInput), tea.WithAltScreen())
+	m, err := NewModel(args.Scopes, args.SelectedScopeName, args.MinScore, args.DebounceTime, args.InitialInput)
+	if err != nil {
+		return err
+	}
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		return err

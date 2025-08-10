@@ -47,17 +47,19 @@ type Model struct {
 	width  int
 	height int
 
-	search  SearchBarModel
-	results ResultListModel
-	preview PreviewModel
-	eval    EvalValueModel
-	help    HelpModel
+	search      SearchBarModel
+	results     ResultListModel
+	preview     PreviewModel
+	selectScope SelectScopeModel
+	eval        EvalValueModel
+	help        HelpModel
 }
 
 type ViewMode int
 
 const (
 	ViewModeSearch = iota
+	ViewModeSelectScope
 	ViewModeEvalValue
 	ViewModeHelp
 )
@@ -101,6 +103,7 @@ func NewModel(
 		SetValue(initialInput)
 	results := NewResultListModel(options, scope.Name).
 		SetFocused(true)
+	selectScope := NewSelectScopeModel(scopes, scope.Name)
 	eval := NewEvalValueModel(scope.Evaluator)
 	help := NewHelpModel()
 
@@ -113,11 +116,12 @@ func NewModel(
 
 		minScore: minScore,
 
-		results: results,
-		preview: preview,
-		search:  search,
-		eval:    eval,
-		help:    help,
+		results:     results,
+		preview:     preview,
+		search:      search,
+		selectScope: selectScope,
+		eval:        eval,
+		help:        help,
 	}, nil
 }
 
@@ -148,6 +152,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Always forward resize events to components that need them.
 		m.eval, _ = m.eval.Update(msg)
 		m.help, _ = m.help.Update(msg)
+		m.selectScope, _ = m.selectScope.Update(msg)
 
 		return m, nil
 
@@ -165,6 +170,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var evalCmd tea.Cmd
 		m.eval, evalCmd = m.eval.Update(msg)
 		return m, evalCmd
+	case ViewModeSelectScope:
+		var selectModeCmd tea.Cmd
+		m.selectScope, selectModeCmd = m.selectScope.Update(msg)
+		return m, selectModeCmd
 	case ViewModeHelp:
 		var helpCmd tea.Cmd
 		m.help, helpCmd = m.help.Update(msg)
@@ -184,6 +193,10 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 		case "ctrl+g":
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeHelp)
+			}
+		case "ctrl+o":
+			return m, func() tea.Msg {
+				return ChangeViewModeMsg(ViewModeSelectScope)
 			}
 		}
 	case RunSearchMsg:
@@ -276,6 +289,8 @@ func (m Model) updateWindowSize(width, height int) Model {
 
 func (m Model) View() string {
 	switch m.mode {
+	case ViewModeSelectScope:
+		return m.selectScope.View()
 	case ViewModeEvalValue:
 		return marginStyle.Render(m.eval.View())
 	case ViewModeHelp:

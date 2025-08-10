@@ -2,6 +2,7 @@ package cmdUtils
 
 import (
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
@@ -23,11 +24,12 @@ func (e ErrorWithHint) Error() string {
 }
 
 func ConfigureBubbleTeaLogger(prefix string) (func(), error) {
-	if os.Getenv("OPTNIX_DEBUG_MODE") == "" {
+	varName := strings.ToUpper(prefix) + "_DEBUG_MODE"
+	if os.Getenv(varName) == "" {
 		return func() {}, nil
 	}
 
-	file, err := tea.LogToFile("debug.log", prefix)
+	file, err := tea.LogToFile(prefix+".debug.log", prefix)
 
 	return func() {
 		if err != nil || file == nil {

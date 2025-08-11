@@ -5,6 +5,7 @@ This application consists of three views:
 - **Main View** :: Search and preview options
 - **Help View** :: Display this help page
 - **Value View** :: Show the current value of an option
+- **Scope Select View** :: Select scope to use
 
 A **purple border** indicates the active (focused) view. Keybinds will only work
 in the context of the currently active view.
@@ -25,6 +26,8 @@ Press `<Tab>` to switch focus between the two windows.
 Press `<Enter>` to view the current value of a selected option, if available;
 this will open the **value view**.
 
+Press `Ctrl+O` to open the scope select view.
+
 ### Search Window
 
 Type to filter the list of options.
@@ -43,6 +46,20 @@ Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
 Displays the current value of the selected option (if it can be evaluated).
 
 Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
+
+Press `<Esc>` or `q` to close this window.
+
+## Scope Select View
+
+Shows all available scopes defined in the configuration, if there is more than
+one. May not always be applicable.
+
+Use the arrow keys or `j` and `k` to scroll the list.
+
+Use `/` to search the list of scopes.
+
+To switch to the selected scope, press `Enter`; if successful, this redirects
+back to the main view automatically.
 
 Press `<Esc>` or `q` to close this window.
 

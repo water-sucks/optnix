@@ -25,11 +25,10 @@ var (
 )
 
 type ResultListModel struct {
-	title string
-
-	options  option.NixosOptionSource
-	filtered []fuzzy.Match
-	input    string
+	scopeName string
+	options   option.NixosOptionSource
+	filtered  []fuzzy.Match
+	input     string
 
 	focused bool
 
@@ -41,14 +40,9 @@ type ResultListModel struct {
 }
 
 func NewResultListModel(options option.NixosOptionSource, scopeName string) ResultListModel {
-	title := "Available Options"
-	if scopeName != "" {
-		title = fmt.Sprintf("Available Options (%v)", scopeName)
-	}
-
 	return ResultListModel{
-		title:   title,
-		options: options,
+		scopeName: scopeName,
+		options:   options,
 	}
 }
 
@@ -153,6 +147,13 @@ func (m ResultListModel) Update(msg tea.Msg) (ResultListModel, tea.Cmd) {
 
 			return m, changeModeCmd
 		}
+
+	case ChangeScopeMsg:
+		m.scopeName = msg.Name
+		m.options = msg.Options
+		m.selected = 0
+		m.start = 0
+		m.filtered = nil
 	}
 
 	// Make sure that resizes don't result in the start row ending
@@ -167,7 +168,14 @@ func (m ResultListModel) Update(msg tea.Msg) (ResultListModel, tea.Cmd) {
 }
 
 func (m ResultListModel) View() string {
-	title := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, titleStyle.Render(m.title))
+	var titleText string
+	if m.scopeName != "" {
+		titleText = fmt.Sprintf("Available Options (%v)", m.scopeName)
+	} else {
+		titleText = "Available Options"
+	}
+
+	title := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, titleStyle.Render(titleText))
 
 	height := m.visibleResultRows()
 

@@ -38,8 +38,8 @@ type Model struct {
 	focus FocusArea
 	mode  ViewMode
 
-	scopes  []option.Scope
-	options option.NixosOptionSource
+	options              option.NixosOptionSource
+	enableScopeSwitching bool
 
 	filtered []fuzzy.Match
 	minScore int64
@@ -111,8 +111,8 @@ func NewModel(
 		mode:  ViewModeSearch,
 		focus: FocusAreaResults,
 
-		scopes:  scopes,
-		options: options,
+		options:              options,
+		enableScopeSwitching: len(scopes) > 1,
 
 		minScore: minScore,
 
@@ -160,7 +160,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = ViewMode(msg)
 
 	case EvalValueStartMsg:
-		m.mode = ViewMode(ViewModeEvalValue)
+		m.mode = ViewModeEvalValue
+
+	case ChangeScopeMsg:
+		m.mode = ViewModeSearch
+		m.options = msg.Options
 	}
 
 	switch m.mode {
@@ -195,6 +199,10 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 				return ChangeViewModeMsg(ViewModeHelp)
 			}
 		case "ctrl+o":
+			if !m.enableScopeSwitching {
+				return m, nil
+			}
+
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeSelectScope)
 			}
@@ -290,7 +298,7 @@ func (m Model) updateWindowSize(width, height int) Model {
 func (m Model) View() string {
 	switch m.mode {
 	case ViewModeSelectScope:
-		return m.selectScope.View()
+		return marginStyle.Render(m.selectScope.View())
 	case ViewModeEvalValue:
 		return marginStyle.Render(m.eval.View())
 	case ViewModeHelp:

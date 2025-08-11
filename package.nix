@@ -8,7 +8,7 @@
 }:
 buildGoModule (finalAttrs: {
   pname = "optnix";
-  version = "0.3.0";
+  version = "0.3.0-dev";
   src = nix-gitignore.gitignoreSource [] ./.;
 
   vendorHash = "sha256-g/H91PiHWSRRQOkaobw2wAYX/07DFxWTCTlKzf7BT1Y=";

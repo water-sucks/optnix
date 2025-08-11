@@ -27,8 +27,10 @@ jobs:
           skipPush: true
 
       - name: Check for compile errors
-        run: |
-          nix develop .# -c make
+        run: nix develop .# -c make
+
+      - name: Run checks
+        run: nix develop .# -c make check
 
       - name: Run tests
         run: nix develop .# -c make test

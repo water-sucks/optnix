@@ -29,6 +29,11 @@ clean:
 	go clean
 	rm -rf ./nixos site/ $(MANPAGES)
 
+.PHONY: check
+check:
+	@echo "running checks..."
+	golangci-lint run
+
 .PHONY: test
 test:
 	@echo "running tests..."

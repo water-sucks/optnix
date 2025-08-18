@@ -22,6 +22,13 @@ values if possible; just like `nix repl` in most cases, but better.
 There is a website for high-level documentation available at
 https://water-sucks.github.io/optnix.
 
+## Install
+
+`optnix` is available in `nixpkgs`.
+
+More installation instructions can be found on the
+[website](https://water-sucks.github.io/optnix/installation.html).
+
 ## Integrations
 
 `optnix` can be used as a Go library, and is used as such in the following

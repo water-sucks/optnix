@@ -1,5 +1,13 @@
 # Installation
 
+## Executable
+
+The latest version of `optnix` is almost always available in `nixpkgs`.
+
+Otherwise:
+
+### Flakes
+
 Use the provided flake input:
 
 ```nix
@@ -25,6 +33,8 @@ Use the provided flake input:
 }
 ```
 
+### Legacy
+
 Or import it inside a Nix expression through `fetchTarball`:
 
 ```nix
@@ -49,7 +59,8 @@ gains some popularity.
 ## Cache
 
 There is a Cachix cache available. Add the following to your Nix configuration
-to avoid lengthy rebuilds and fetching extra build-time dependencies:
+to avoid lengthy rebuilds and fetching extra build-time dependencies, if not
+using `nixpkgs`:
 
 ```nix
 {

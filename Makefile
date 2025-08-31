@@ -1,8 +1,8 @@
 APP_NAME := optnix
 BUILD_VAR_PKG := github.com/water-sucks/optnix/internal/build
 
-VERSION ?= $(shell git describe --tags --always)
-GIT_REVISION := $(shell git rev-parse HEAD)
+VERSION ?= $(shell (git describe --tags --always || echo unknown))
+GIT_REVISION ?= $(shell (git rev-parse HEAD || echo main))
 
 LDFLAGS := -X $(BUILD_VAR_PKG).Version=$(VERSION)
 

@@ -1,0 +1,23 @@
+image: alpine/edge
+secrets:
+  - e09ba9f3-a378-4e6e-a9bf-43e1f3f6cca8
+sources:
+  - https://git.sr.ht/~watersucks/optnix
+tasks:
+  - write-ssh-config: |
+      cat >> ~/.ssh/config << EOF
+      Host github.com
+        IdentityFile ~/.ssh/srht_github_mirror
+        IdentitiesOnly yes
+        BatchMode yes
+        StrictHostKeyChecking no
+      EOF
+  - mirror: |
+      cd ~/optnix
+      git remote add github git@github.com:water-sucks/optnix.git
+      git push --mirror github
+triggers:
+  - action: email
+    condition: failure
+    to: '<~watersucks/optnix-devel@lists.sr.ht>'
+

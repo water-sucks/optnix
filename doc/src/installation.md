@@ -22,9 +22,11 @@ Use the provided flake input:
     nixosConfigurations.jdoe = inputs.nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        ({pkgs, ...}: {
+        ({pkgs, ...}: let
+          inherit (pkgs.stdenv.hostPlatform) system;
+        in {
           environment.systemPackages = [
-            inputs.optnix.packages.${pkgs.system}.optnix
+            inputs.optnix.packages.${system}.optnix
           ];
         })
       ];
@@ -39,8 +41,10 @@ Or import it inside a Nix expression through `fetchTarball`:
 
 ```nix
 {pkgs, ...}: let
+  inherit (pkgs.stdenv.hostPlatform) system;
+
   optnix-url = "https://github.com/water-sucks/optnix/archive/GITREVORBRANCHDEADBEEFDEADBEEF0000.tar.gz";
-  optnix = (import "${builtins.fetchTarball optnix}").packages.${pkgs.system}.optnix;
+  optnix = (import "${builtins.fetchTarball optnix}").packages.${system}.optnix;
 in {
   environment.systemPackages = [
     optnix

@@ -6,6 +6,8 @@ self: {
 }: let
   cfg = config.programs.optnix;
 
+  inherit (pkgs.stdenv.hostPlatform) system;
+
   tomlFormat = pkgs.formats.toml {};
 in {
   options.programs.optnix = {
@@ -14,7 +16,7 @@ in {
     package = lib.mkOption {
       type = lib.types.package;
       description = "Package that provides optnix";
-      default = self.packages.${pkgs.system}.optnix;
+      default = self.packages.${system}.optnix;
     };
 
     settings = lib.mkOption {

@@ -13,8 +13,9 @@
       )
       {src = ./.;}
     ).outputs;
+  inherit (pkgs.stdenv.hostPlatform) system;
 in {
-  inherit (flakeSelf.packages.${pkgs.system}) optnix;
+  inherit (flakeSelf.packages.${system}) optnix;
 
   nixosModules.optnix = flakeSelf.nixosModules.optnix;
   darwinModules.optnix = flakeSelf.darwinModules.optnix;

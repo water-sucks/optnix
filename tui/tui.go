@@ -2,7 +2,9 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -128,7 +130,10 @@ func NewModel(
 func (m Model) Init() tea.Cmd {
 	if m.search.Value() != "" {
 		return func() tea.Msg {
-			return RunSearchMsg{Query: m.search.Value()}
+			return RunSearchMsg{
+				Query: m.search.Value(),
+				Mode:  SearchModeFuzzy,
+			}
 		}
 	}
 
@@ -208,7 +213,7 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 	case RunSearchMsg:
-		m = m.runSearch(msg.Query)
+		m = m.runSearch(msg.Query, msg.Mode)
 		m.search = m.search.SetResultCount(len(m.filtered))
 	}
 
@@ -232,11 +237,39 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) runSearch(query string) Model {
-	allMatches := fuzzy.FindFrom(query, m.options)
-	m.filtered = utils.FilterMinimumScoreMatches(allMatches, m.minScore)
+func (m Model) runSearch(query string, mode SearchMode) Model {
+	m.results = m.results.SetSearchError(nil)
 
-	slices.Reverse(m.filtered)
+	if len(query) == 0 {
+		m.filtered = nil
+		m.results = m.results.
+			SetQuery(query).
+			SetResultList(m.filtered).
+			SetSelectedIndex(len(m.filtered) - 1)
+		return m
+	}
+
+	var matches []fuzzy.Match
+	switch mode {
+	case SearchModeFuzzy:
+		allMatches := fuzzy.FindFrom(query, m.options)
+		matches = utils.FilterMinimumScoreMatches(allMatches, m.minScore)
+
+		// Reverse the filtered match list, since we want more relevant
+		// options at the bottom of the screen.
+		slices.Reverse(matches)
+	case SearchModeRegex:
+		expr, err := regexp.Compile(query)
+		if err != nil {
+			m.results = m.results.SetSearchError(err)
+			return m
+		}
+		matches = regexSearch(m.options, expr)
+	default:
+		panic("unhandled search mode")
+	}
+
+	m.filtered = matches
 
 	m.results = m.results.
 		SetQuery(query).
@@ -246,8 +279,84 @@ func (m Model) runSearch(query string) Model {
 	return m
 }
 
+func regexSearch(options option.NixosOptionSource, expr *regexp.Regexp) []fuzzy.Match {
+	var matches []fuzzy.Match
+
+	for i, o := range options {
+		matchedCaptureRanges := expr.FindAllStringSubmatchIndex(o.Name, -1)
+		if len(matchedCaptureRanges) == 0 {
+			continue
+		}
+
+		m := fuzzy.Match{}
+
+		m.Index = i
+
+		for _, capture := range matchedCaptureRanges {
+			start, end := capture[0], capture[1]-1
+
+			capturedIndices := make([]int, end-start+1)
+			for j := range capturedIndices {
+				capturedIndices[j] = start + j
+			}
+
+			m.Str = o.Name
+			m.MatchedIndexes = append(m.MatchedIndexes, capturedIndices...)
+			m.Score = calculateRegexScore(o.Name, capturedIndices)
+		}
+
+		matches = append(matches, m)
+	}
+
+	slices.SortFunc(matches, func(a, b fuzzy.Match) int {
+		return a.Score - b.Score
+	})
+
+	return matches
+}
+
+func calculateRegexScore(str string, matchedIndexes []int) int {
+	if len(matchedIndexes) == 0 {
+		return 0
+	}
+
+	const (
+		consecutiveBonus  = 5
+		wordBoundaryBonus = 10
+	)
+
+	// Base score: 1 per matched character
+	score := len(matchedIndexes)
+
+	// Bonus for consecutive matches
+	for i := 1; i < len(matchedIndexes); i++ {
+		if matchedIndexes[i] == matchedIndexes[i-1]+1 {
+			score += consecutiveBonus
+		}
+	}
+
+	// Bonus for matches at start of word boundaries
+	for _, idx := range matchedIndexes {
+		if idx == 0 {
+			// First character is automatically a word boundary
+			score += wordBoundaryBonus
+		} else {
+			// Matched characters after non-alphanumeric ones
+			// also are word boundaries
+			char := rune(str[idx-1])
+			if !unicode.IsLetter(char) && !unicode.IsDigit(char) {
+				score += wordBoundaryBonus
+			}
+		}
+	}
+
+	// Normalize by string length
+	return score * 100 / len(str)
+}
+
 type RunSearchMsg struct {
 	Query string
+	Mode  SearchMode
 }
 
 func (m Model) toggleFocus() Model {

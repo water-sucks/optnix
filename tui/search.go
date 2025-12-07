@@ -19,9 +19,18 @@ type SearchBarModel struct {
 	height  int
 	focused bool
 
+	searchMode SearchMode
+
 	resultCount int
 	totalCount  int
 }
+
+type SearchMode int
+
+const (
+	SearchModeFuzzy SearchMode = iota
+	SearchModeRegex
+)
 
 func NewSearchBarModel(totalCount int, debounceTime int64) SearchBarModel {
 	ti := textinput.New()
@@ -35,12 +44,26 @@ func NewSearchBarModel(totalCount int, debounceTime int64) SearchBarModel {
 		debouncer:    debouncer,
 		debounceTime: debounceTime,
 		totalCount:   totalCount,
+		searchMode:   SearchModeFuzzy,
 	}
 }
 
 func (m SearchBarModel) Update(msg tea.Msg) (SearchBarModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if msg.String() == "ctrl+f" {
+			switch m.searchMode {
+			case SearchModeFuzzy:
+				m.searchMode = SearchModeRegex
+				m.input.Prompt = "(^$) "
+			case SearchModeRegex:
+				m.searchMode = SearchModeFuzzy
+				m.input.Prompt = "> "
+			}
+
+			return m, nil
+		}
+
 		oldValue := m.input.Value()
 		input, cmd := m.input.Update(msg)
 		m.input = input
@@ -66,7 +89,10 @@ func (m SearchBarModel) Update(msg tea.Msg) (SearchBarModel, tea.Cmd) {
 		switch inner := msg.Msg.(type) {
 		case searchChangedMsg:
 			return m, func() tea.Msg {
-				return RunSearchMsg{Query: string(inner)}
+				return RunSearchMsg{
+					Query: string(inner),
+					Mode:  m.searchMode,
+				}
 			}
 		}
 

@@ -58,8 +58,8 @@ library. This will be seen in later examples.
 There are two modes of operation: interactive (the default) and non-interactive.
 
 Interactive mode will display a search UI that allows looking for options using
-fuzzy search keywords. Selected options in the list can also be evaluated in
-order to preview their values.
+fuzzy search keywords or regular expressions. Selected options in the list can
+also be evaluated in order to preview their values.
 
 Non-interactive mode requires a valid option name as input, and will display the
 option and its values (if applicable) without any user interaction. This kind of

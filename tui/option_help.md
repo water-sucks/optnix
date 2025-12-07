@@ -30,7 +30,12 @@ Press `Ctrl+O` to open the scope select view.
 
 ### Search Window
 
-Type to filter the list of options.
+There are two modes of search: **fuzzy search** and **regex search**. Fuzzy
+search is the default mode, and uses ranked approximate string matching. Regex
+mode allows using RE2-style regular expressions for more exact matching.
+
+Switch between these modes using `Ctrl+F`. Fuzzy mode is indicated by a `> `
+prompt, while regex mode is indicated by a `(^$) ` prompt in the search bar.
 
 Use the `Up` + `Down` arrows to navigate the results. As you move through the
 list, the **Preview Window** updates automatically.

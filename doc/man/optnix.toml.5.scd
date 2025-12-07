@@ -77,10 +77,12 @@ All available settings and their descriptions.
 
 *min_score*
 
-Minimum score required for search matches; the higher the score, the more fuzzy
-matches are required before it is displayed in the list. Higher scores will
-generally lead to less (but more relevant) results, but this has diminishing
-returns.
+Minimum score required for fuzzy search matches; the higher the score, the more
+fuzzy matches are required before it is displayed in the list. Higher scores
+will generally lead to less (but more relevant) results, but this has
+diminishing returns.
+
+This option is not used in regex search mode.
 
 Default: _1_
 

@@ -32,6 +32,8 @@ type ResultListModel struct {
 
 	focused bool
 
+	searchErr error
+
 	selected int
 	start    int
 
@@ -53,6 +55,11 @@ func (m ResultListModel) SetResultList(matches []fuzzy.Match) ResultListModel {
 
 func (m ResultListModel) SetQuery(input string) ResultListModel {
 	m.input = input
+	return m
+}
+
+func (m ResultListModel) SetSearchError(err error) ResultListModel {
+	m.searchErr = err
 	return m
 }
 
@@ -218,12 +225,21 @@ func (m ResultListModel) View() string {
 		lines = append(lines, line)
 	}
 
-	if len(m.filtered) == 0 && len(lines) > 2 {
+	if len(m.filtered) == 0 || m.searchErr != nil {
+		for i := range lines {
+			lines[i] = ""
+		}
+
 		inputLen := len(m.input)
-		if inputLen > 3 {
-			lines[2] = "  No results found."
-		} else if inputLen > 0 {
-			lines[2] = "  Please provide more precise search terms."
+
+		if len(lines) > 2 {
+			if m.searchErr != nil {
+				lines[2] = fmt.Sprintf("  %s", m.searchErr)
+			} else if inputLen > 3 {
+				lines[2] = "  No results found."
+			} else if inputLen > 0 {
+				lines[2] = "  Please provide more precise search terms."
+			}
 		}
 	}
 

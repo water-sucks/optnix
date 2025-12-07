@@ -79,6 +79,8 @@ using a custom configuration file:
 *-m*, *--min-score <SCORE>*
 	Minimum score threshold for deeming a potential candidate a match.
 
+	This option is ignored in regex mode.
+
 	The lower the number is, the more search results will show up, but they may
 	be less relevant.
 
@@ -107,5 +109,6 @@ using a custom configuration file:
 # AUTHORS
 
 Maintained by Varun Narravula <varun@snare.dev>. Up-to-date sources can be
-found at https://github.com/water-suck/optnix, and bugs reports or patches
-can be submitted to GitHub's issue tracker.
+found at https://sr.ht/~watersucks/optnix, and bugs reports or patches
+can be submitted by email to the sr.ht mailing lists/issue tracker, or to
+the GitHub mirror as a pull request/issue. Prefer the former if possible.

@@ -1,0 +1,42 @@
+image: nixos/unstable
+
+secrets:
+  - eb550589-e6db-4c04-9452-e30f6488f3d5
+
+packages:
+  - nixos.netlify-cli
+
+environment:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  NETLIFY_SITE_ID: '3dae129b-0a17-41d2-8fcf-80bef49247cd'
+
+sources:
+  - https://git.sr.ht/~watersucks/optnix
+
+tasks:
+  - build: |
+      cd ~/optnix
+
+      nix develop .#ci -c make site
+
+  - deploy: |
+      cd ~/optnix
+
+      if [ "$(git rev-parse origin/main)" != "$(git rev-parse HEAD)" ]; then \
+        complete-build; \
+      fi
+
+      {
+        set +x
+        . ~/.netlify-secrets
+        set -x
+      }
+
+      export NETLIFY_AUTH_TOKEN
+
+      netlify deploy --site=$NETLIFY_SITE_ID --dir=./site --prod --no-build
+
+triggers:
+  - action: email
+    condition: failure
+    to: '<~watersucks/optnix-devel@lists.sr.ht>'

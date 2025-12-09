@@ -53,6 +53,8 @@
         buildInputs = [
           go
           golangci-lint
+          mdbook
+          prettier
         ];
       };
     });

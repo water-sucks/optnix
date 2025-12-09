@@ -47,6 +47,14 @@
           nix-options-doc
         ];
       };
+
+      ci = pkgs.mkShell {
+        name = "optnix-shell-ci";
+        buildInputs = [
+          go
+          golangci-lint
+        ];
+      };
     });
 
     nixosModules.optnix = import ./nix/modules/nixos.nix self;

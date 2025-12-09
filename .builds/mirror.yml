@@ -20,4 +20,3 @@ triggers:
   - action: email
     condition: failure
     to: '<~watersucks/optnix-devel@lists.sr.ht>'
-

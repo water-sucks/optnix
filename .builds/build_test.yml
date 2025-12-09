@@ -1,0 +1,32 @@
+image: nixos/unstable
+
+secrets:
+  - eb550589-e6db-4c04-9452-e30f6488f3d5
+
+packages:
+  - nixos.cachix
+
+sources:
+  - https://git.sr.ht/~watersucks/optnix
+
+environment:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+
+tasks:
+  - setup: |
+      {
+        set +x
+        . ~/.cachix-secrets
+        set -x
+      }
+      export CACHIX_AUTH_TOKEN
+      cachix use watersucks
+  - check: |
+      cd ~/optnix
+      nix develop .#ci -c make check
+  - test: |
+      cd ~/optnix
+      nix develop .#ci -c make test
+  - build: |
+      cd ~/optnix
+      nix build .#optnix -L

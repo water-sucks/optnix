@@ -22,8 +22,8 @@ values if possible; just like `nix repl` in most cases, but better.
 There is a website for high-level documentation available at
 https://water-sucks.github.io/optnix.
 
-This repository is hosted on [sr.ht](sr.ht/~watersucks/optnix), with an official
-mirror on [GitHub](https://github.com/water-sucks/optnix).
+This repository is hosted on [sr.ht](https://sr.ht/~watersucks/optnix), with an
+official mirror on [GitHub](https://github.com/water-sucks/optnix).
 
 ## Install
 

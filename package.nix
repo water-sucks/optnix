@@ -45,7 +45,7 @@ buildGoModule (finalAttrs: {
   '';
 
   meta = {
-    homepage = "https://github.com/water-sucks/optnix";
+    homepage = "https://sr.ht/~watersucks/optnix";
     description = "A fast options searcher for Nix module systems";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [water-sucks];

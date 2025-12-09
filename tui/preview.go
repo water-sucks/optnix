@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
-	"github.com/water-sucks/optnix/option"
+	"snare.dev/optnix/option"
 )
 
 type PreviewModel struct {

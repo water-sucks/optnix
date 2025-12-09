@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/water-sucks/optnix/internal/utils"
-	"github.com/water-sucks/optnix/option"
+	"snare.dev/optnix/internal/utils"
+	"snare.dev/optnix/option"
 )
 
 type Scope struct {

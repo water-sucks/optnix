@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/water-sucks/optnix/internal/config"
+	"snare.dev/optnix/internal/config"
 )
 
 func GenerateCompletions(cmd *cobra.Command, shell string) {

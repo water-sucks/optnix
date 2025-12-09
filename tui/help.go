@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/water-sucks/optnix/option"
+	"snare.dev/optnix/option"
 )
 
 //go:embed option_help.md

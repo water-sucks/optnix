@@ -10,9 +10,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/sahilm/fuzzy"
-	cmdUtils "github.com/water-sucks/optnix/internal/cmd/utils"
-	"github.com/water-sucks/optnix/internal/utils"
-	"github.com/water-sucks/optnix/option"
+	cmdUtils "snare.dev/optnix/internal/cmd/utils"
+	"snare.dev/optnix/internal/utils"
+	"snare.dev/optnix/option"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
 	"github.com/muesli/termenv"
-	"github.com/water-sucks/optnix/option"
+	"snare.dev/optnix/option"
 )
 
 type EvalValueModel struct {

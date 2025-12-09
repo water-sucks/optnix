@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/sahilm/fuzzy"
-	"github.com/water-sucks/optnix/option"
+	"snare.dev/optnix/option"
 )
 
 var (

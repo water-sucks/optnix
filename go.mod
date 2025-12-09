@@ -1,4 +1,4 @@
-module github.com/water-sucks/optnix
+module snare.dev/optnix
 
 go 1.24.2
 

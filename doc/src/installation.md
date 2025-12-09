@@ -15,7 +15,7 @@ Use the provided flake input:
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
-    optnix.url = "github:water-sucks/optnix";
+    optnix.url = "sourcehut:~watersucks/optnix";
   };
 
   outputs = inputs: {
@@ -41,10 +41,8 @@ Or import it inside a Nix expression through `fetchTarball`:
 
 ```nix
 {pkgs, ...}: let
-  inherit (pkgs.stdenv.hostPlatform) system;
-
-  optnix-url = "https://github.com/water-sucks/optnix/archive/GITREVORBRANCHDEADBEEFDEADBEEF0000.tar.gz";
-  optnix = (import "${builtins.fetchTarball optnix}").packages.${system}.optnix;
+  optnix-url = "https://git.sr.ht/~watersucks/optnix/archive/GITREVORBRANCHDEADBEEFDEADBEEF0000.tar.gz";
+  optnix = (import "${builtins.fetchTarball optnix-url}" {inherit pkgs;}).optnix;
 in {
   environment.systemPackages = [
     optnix

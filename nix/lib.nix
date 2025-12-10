@@ -55,7 +55,18 @@ pkgs: let
 
     rawOptions =
       map transform (lib.optionAttrSetToDocList options');
-    filteredOptions = lib.filter (opt: opt.visible && !opt.internal) rawOptions;
+
+    # Yes, we're running the filter for excluded twice. But this is
+    # only because some paths exist in here that cannot otherwise be
+    # removed by removeAtPath, such as _module.args.
+    filteredOptions =
+      lib.filter (
+        opt:
+          opt.visible
+          && !opt.internal
+          && !(builtins.elem opt.name excluded)
+      )
+      rawOptions;
 
     optionsJSON = builtins.unsafeDiscardStringContext (builtins.toJSON filteredOptions);
   in
@@ -67,18 +78,23 @@ pkgs: let
   @param  modules   list of modules containing options
   @return           a derivation that builds an options.json file
   */
-  mkOptionsListFromModules = {modules}: let
+  mkOptionsListFromModules = {
+    modules,
+    specialArgs ? {},
+    excluded ? [],
+  }: let
     eval'd = lib.evalModules {
-      inherit pkgs;
       modules =
         modules
         ++ [
           {_module.check = false;}
         ];
+      inherit specialArgs;
     };
   in
     mkOptionsList {
       inherit (eval'd) options;
+      inherit excluded;
     };
 
   hm = {

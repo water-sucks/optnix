@@ -1,7 +1,7 @@
 image: nixos/unstable
 
 secrets:
-  - eb550589-e6db-4c04-9452-e30f6488f3d5
+  - 054733e5-e274-483d-b855-80f835ab0d98
 
 packages:
   - nixos.netlify-cli
@@ -17,7 +17,7 @@ tasks:
   - build: |
       cd ~/optnix
 
-      nix develop .#ci -c make site
+      nix develop .# -c make site
 
   - deploy: |
       cd ~/optnix

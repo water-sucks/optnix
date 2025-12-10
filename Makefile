@@ -8,7 +8,6 @@ LDFLAGS := -X $(BUILD_VAR_PKG).Version=$(VERSION)
 
 GENERATED_MODULE_DOCS := doc/src/usage/generated-module.md
 NIX_MODULE := nix/modules/nixos.nix
-SRHT_URL := https://git.sr.ht/~watersucks/optnix/tree/$(GIT_REVISION)/$(NIX_MODULE)
 
 MANPAGES_SRC := $(wildcard doc/man/*.scd)
 MANPAGES := $(patsubst doc/man/%.scd,%,$(MANPAGES_SRC))
@@ -48,10 +47,7 @@ serve-site: $(GENERATED_MODULE_DOCS)
 	mdbook serve ./doc --open
 
 $(GENERATED_MODULE_DOCS): $(NIX_MODULE)
-	nix-options-doc -f markdown -p $< --strip-prefix | \
-		tail -n +4 | \
-		sed -E 's|\(#L([0-9]+)\)|('"$(SRHT_URL)"'#L\1)|g' \
-		> $@
+	go run doc/build.go gen-module-docs
 
 man: $(MANPAGES)
 

@@ -23,10 +23,10 @@ tasks:
       cachix use watersucks
   - check: |
       cd ~/optnix
-      nix develop .#ci -c make check
+      nix develop .# -c make check
   - test: |
       cd ~/optnix
-      nix develop .#ci -c make test
+      nix develop .# -c make test
   - build: |
       cd ~/optnix
       nix build .#optnix -L

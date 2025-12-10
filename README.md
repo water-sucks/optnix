@@ -20,7 +20,7 @@ code. `optnix` can solve that problem for you, and allows you to inspect their
 values if possible; just like `nix repl` in most cases, but better.
 
 There is a website for high-level documentation available at
-https://water-sucks.github.io/optnix.
+https://optnix.snare.dev.
 
 This repository is hosted on [sr.ht](https://sr.ht/~watersucks/optnix), with an
 official mirror on [GitHub](https://github.com/water-sucks/optnix).
@@ -30,7 +30,7 @@ official mirror on [GitHub](https://github.com/water-sucks/optnix).
 `optnix` is available in `nixpkgs`.
 
 More installation instructions can be found on the
-[website](https://water-sucks.github.io/optnix/installation.html).
+[documentation website](https://optnix.snare.dev/optnix/installation.html).
 
 ## Integrations
 

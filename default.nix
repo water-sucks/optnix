@@ -1,18 +1,5 @@
 {pkgs ? import <nixpkgs> {}}: let
-  flakeSelf =
-    (
-      import
-      (
-        let
-          lock = builtins.fromJSON (builtins.readFile ./flake.lock);
-        in
-          fetchTarball {
-            url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
-            sha256 = lock.nodes.flake-compat.locked.narHash;
-          }
-      )
-      {src = ./.;}
-    ).outputs;
+  flakeSelf = (import ./nix/flake-compat.nix).outputs;
   inherit (pkgs.stdenv.hostPlatform) system;
 in {
   inherit (flakeSelf.packages.${system}) optnix;

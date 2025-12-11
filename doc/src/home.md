@@ -2,7 +2,7 @@
 
 `optnix` is a fast, terminal-based options searcher for Nix module systems.
 
-[![a demo of optnix](./demo.gif)](https://asciinema.org/a/728870?autoplay=1)
+<script src="https://asciinema.org/a/761292.js" id="asciicast-761292" data-autoplay async="true"></script>
 
 There are multiple module systems that Nix users use on a daily basis:
 

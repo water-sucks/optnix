@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -115,6 +116,10 @@ type SelectScopeModel struct {
 }
 
 func NewSelectScopeModel(scopes []option.Scope, selectedScope string) SelectScopeModel {
+	slices.SortFunc(scopes, func(a, b option.Scope) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
 	items := make([]list.Item, len(scopes))
 	for i, s := range scopes {
 		selected := s.Name == selectedScope
@@ -204,8 +209,18 @@ func (m SelectScopeModel) Update(msg tea.Msg) (SelectScopeModel, tea.Cmd) {
 	case LoadScopeStartMsg:
 		m.loading = true
 		m.err = nil
+		m.selectedScope = msg.Name
+
+		items := make([]list.Item, len(m.scopes))
+		for i, s := range m.scopes {
+			items[i] = scopeItem{
+				Scope:    s,
+				Selected: s.Name == m.selectedScope,
+			}
+		}
 
 		cmds = append(cmds, m.spinner.Tick)
+		cmds = append(cmds, m.list.SetItems(items))
 		cmds = append(cmds, func() tea.Msg {
 			loaded, err := msg.Loader()
 			return LoadScopeFinishedMsg{

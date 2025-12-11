@@ -35,14 +35,16 @@ var (
 type LoadScopeStartMsg option.Scope
 
 type LoadScopeFinishedMsg struct {
-	Name    string
-	Options option.NixosOptionSource
-	Err     error
+	Name      string
+	Options   option.NixosOptionSource
+	Evaluator option.EvaluatorFunc
+	Err       error
 }
 
 type ChangeScopeMsg struct {
-	Name    string
-	Options option.NixosOptionSource
+	Name      string
+	Options   option.NixosOptionSource
+	Evaluator option.EvaluatorFunc
 }
 
 type scopeItem struct {
@@ -207,9 +209,10 @@ func (m SelectScopeModel) Update(msg tea.Msg) (SelectScopeModel, tea.Cmd) {
 		cmds = append(cmds, func() tea.Msg {
 			loaded, err := msg.Loader()
 			return LoadScopeFinishedMsg{
-				Name:    msg.Name,
-				Options: loaded,
-				Err:     err,
+				Name:      msg.Name,
+				Options:   loaded,
+				Err:       err,
+				Evaluator: msg.Evaluator,
 			}
 		})
 
@@ -227,8 +230,9 @@ func (m SelectScopeModel) Update(msg tea.Msg) (SelectScopeModel, tea.Cmd) {
 		if m.err == nil {
 			return m, func() tea.Msg {
 				return ChangeScopeMsg{
-					Name:    msg.Name,
-					Options: msg.Options,
+					Name:      msg.Name,
+					Options:   msg.Options,
+					Evaluator: msg.Evaluator,
 				}
 			}
 		}

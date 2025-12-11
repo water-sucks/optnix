@@ -170,6 +170,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ChangeScopeMsg:
 		m.mode = ViewModeSearch
 		m.options = msg.Options
+		m.eval = m.eval.SetEvaluator(msg.Evaluator)
 	}
 
 	switch m.mode {

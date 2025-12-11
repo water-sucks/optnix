@@ -122,6 +122,11 @@ func (m EvalValueModel) evalOptionCmd() tea.Cmd {
 	}
 }
 
+func (m EvalValueModel) SetEvaluator(evaluator option.EvaluatorFunc) EvalValueModel {
+	m.evaluator = evaluator
+	return m
+}
+
 func (m EvalValueModel) SetOption(o string) (EvalValueModel, tea.Cmd) {
 	if o == m.option {
 		return m, nil

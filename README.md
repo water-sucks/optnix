@@ -30,7 +30,7 @@ official mirror on [GitHub](https://github.com/water-sucks/optnix).
 `optnix` is available in `nixpkgs`.
 
 More installation instructions can be found on the
-[documentation website](https://optnix.snare.dev/optnix/installation.html).
+[documentation website](https://optnix.snare.dev/installation.html).
 
 ## Integrations
 

@@ -21,20 +21,22 @@ directly.
 in {
   programs.optnix = {
     enable = true;
-    scopes = {
-      home-manager = {
-        description = "home-manager configuration for all systems";
-        options-list-file = optnixLib.mkOptionsList {
-          inherit options;
-          transform = o:
-            o
-            // {
-              name = lib.removePrefix "home-manager.users.${config.home.username}." o.name;
-            };
+    settings = {
+      scopes = {
+        home-manager = {
+          description = "home-manager configuration for all systems";
+          options-list-file = optnixLib.mkOptionsList {
+            inherit options;
+            transform = o:
+              o
+              // {
+                name = lib.removePrefix "home-manager.users.${config.home.username}." o.name;
+              };
+          };
+          evaluator = "";
         };
-        evaluator = "";
       };
-    }
+    };
   };
 }
 ```

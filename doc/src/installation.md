@@ -1,5 +1,10 @@
 # Installation
 
+**NOTE**: Prefer using the provided modules if possible. This is for standalone
+`optnix` installations without Nix modules.
+
+Refer to the [module documentation](./usage/module.md) for more information.
+
 ## Executable
 
 The latest version of `optnix` is almost always available in `nixpkgs`.

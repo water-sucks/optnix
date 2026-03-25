@@ -97,7 +97,18 @@ func (m SearchBarModel) Update(msg tea.Msg) (SearchBarModel, tea.Cmd) {
 		}
 
 	case ChangeScopeMsg:
-		m.input.Reset()
+		if msg.KeepSearch {
+			if query := m.input.Value(); query != "" {
+				return m, func() tea.Msg {
+					return RunSearchMsg{
+						Query: query,
+						Mode:  m.searchMode,
+					}
+				}
+			}
+		} else {
+			m.input.Reset()
+		}
 	}
 
 	return m, nil

@@ -28,6 +28,8 @@ this will open the **value view**.
 
 Press `Ctrl+O` to open the scope select view.
 
+Press `<Shift+Tab>` to cycle to the next scope.
+
 ### Search Window
 
 There are two modes of search: **fuzzy search** and **regex search**. Fuzzy

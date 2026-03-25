@@ -168,9 +168,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = ViewModeEvalValue
 
 	case ChangeScopeMsg:
+		if msg.Err != nil {
+			m.mode = ViewModeSearch
+			m.results = m.results.SetSearchError(msg.Err)
+			return m, nil
+		}
 		m.mode = ViewModeSearch
 		m.options = msg.Options
 		m.eval = m.eval.SetEvaluator(msg.Evaluator)
+		m.selectScope, _ = m.selectScope.Update(msg)
 	}
 
 	switch m.mode {
@@ -204,6 +210,23 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeHelp)
 			}
+		case "shift+tab":
+			if !m.enableScopeSwitching {
+				return m, nil
+			}
+
+			next := m.selectScope.NextScope()
+			return m, func() tea.Msg {
+				options, err := next.Loader()
+				return ChangeScopeMsg{
+					Name:       next.Name,
+					Options:    options,
+					Evaluator:  next.Evaluator,
+					KeepSearch: true,
+					Err:        err,
+				}
+			}
+
 		case "ctrl+o":
 			if !m.enableScopeSwitching {
 				return m, nil

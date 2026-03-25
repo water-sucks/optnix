@@ -43,9 +43,11 @@ type LoadScopeFinishedMsg struct {
 }
 
 type ChangeScopeMsg struct {
-	Name      string
-	Options   option.NixosOptionSource
-	Evaluator option.EvaluatorFunc
+	Name       string
+	Options    option.NixosOptionSource
+	Evaluator  option.EvaluatorFunc
+	KeepSearch bool
+	Err        error
 }
 
 type scopeItem struct {
@@ -163,6 +165,15 @@ func NewSelectScopeModel(scopes []option.Scope, selectedScope string) SelectScop
 	}
 }
 
+func (m SelectScopeModel) NextScope() option.Scope {
+	for i, s := range m.scopes {
+		if s.Name == m.selectedScope {
+			return m.scopes[(i+1)%len(m.scopes)]
+		}
+	}
+	return m.scopes[0]
+}
+
 func (m SelectScopeModel) Update(msg tea.Msg) (SelectScopeModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -193,6 +204,20 @@ func (m SelectScopeModel) Update(msg tea.Msg) (SelectScopeModel, tea.Cmd) {
 				return LoadScopeStartMsg(item.Scope)
 			}
 		}
+
+	case ChangeScopeMsg:
+		m.selectedScope = msg.Name
+
+		items := make([]list.Item, len(m.scopes))
+		for i, s := range m.scopes {
+			items[i] = scopeItem{
+				Scope:    s,
+				Selected: s.Name == m.selectedScope,
+			}
+		}
+		cmds = append(cmds, m.list.SetItems(items))
+
+		return m, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"time"
 	"unicode"
 
 	"github.com/atotto/clipboard"
@@ -33,8 +32,8 @@ var (
 			BorderLeft(false)
 
 	marginStyle = lipgloss.NewStyle().Margin(2, 2, 0, 2)
-	hintStyle   = lipgloss.NewStyle().
-			Foreground(lipgloss.ANSIColor(termenv.ANSIYellow)) // Soft gray
+	hintStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.ANSIColor(termenv.ANSIYellow))
 
 )
 
@@ -51,7 +50,7 @@ type Model struct {
 	width  int
 	height int
 
-	clipboardFlash bool
+	statusBar StatusBarModel
 
 	search      SearchBarModel
 	results     ResultListModel
@@ -73,7 +72,7 @@ const (
 type ChangeViewModeMsg ViewMode
 
 type CopiedToClipboardMsg struct{}
-type ClearClipboardFlashMsg struct{}
+type ClearClipboardFlashMsg struct{ id int }
 
 type FocusArea int
 
@@ -131,6 +130,7 @@ func NewModel(
 		selectScope: selectScope,
 		eval:        eval,
 		help:        help,
+		statusBar:   NewStatusBarModel(),
 	}, nil
 }
 
@@ -161,22 +161,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m = m.updateWindowSize(msg.Width, msg.Height)
 
+		m.statusBar = m.statusBar.SetWidth(msg.Width)
+
 		// Always forward resize events to components that need them.
-		m.eval, _ = m.eval.Update(msg)
-		m.help, _ = m.help.Update(msg)
-		m.selectScope, _ = m.selectScope.Update(msg)
+		// Shrink height by 1 so overlays leave room for the status bar.
+		overlayMsg := tea.WindowSizeMsg{Width: msg.Width, Height: msg.Height - 1}
+		m.eval, _ = m.eval.Update(overlayMsg)
+		m.help, _ = m.help.Update(overlayMsg)
+		m.selectScope, _ = m.selectScope.Update(overlayMsg)
 
 		return m, nil
 
-	case CopiedToClipboardMsg:
-		m.clipboardFlash = true
-		return m, tea.Tick(2*time.Second, func(time.Time) tea.Msg {
-			return ClearClipboardFlashMsg{}
-		})
-
-	case ClearClipboardFlashMsg:
-		m.clipboardFlash = false
-		return m, nil
+	case CopiedToClipboardMsg, ClearClipboardFlashMsg:
+		var cmd tea.Cmd
+		m.statusBar, cmd = m.statusBar.Update(msg)
+		return m, cmd
 
 	case ChangeViewModeMsg:
 		m.mode = ViewMode(msg)
@@ -432,7 +431,7 @@ func (m Model) updateWindowSize(width, height int) Model {
 	m.height = height
 
 	usableWidth := width - 4   // 2 left + 2 right margins
-	usableHeight := height - 2 // 2 top margin
+	usableHeight := height - 3 // 2 top margin + 1 status bar
 
 	searchHeight := 3
 
@@ -454,33 +453,26 @@ func (m Model) updateWindowSize(width, height int) Model {
 }
 
 func (m Model) View() string {
+	var content string
+
 	switch m.mode {
 	case ViewModeSelectScope:
-		return marginStyle.Render(m.selectScope.View())
+		content = marginStyle.Render(m.selectScope.View())
 	case ViewModeEvalValue:
-		return marginStyle.Render(m.eval.View())
+		content = marginStyle.Render(m.eval.View())
 	case ViewModeHelp:
-		return marginStyle.Render(m.help.View())
+		content = marginStyle.Render(m.help.View())
+	default:
+		results := m.results.View()
+		search := m.search.View()
+		preview := m.preview.View()
+
+		left := lipgloss.JoinVertical(lipgloss.Top, results, search)
+		main := lipgloss.JoinHorizontal(lipgloss.Top, left, preview)
+		content = marginStyle.Render(main)
 	}
 
-	results := m.results.View()
-	search := m.search.View()
-	preview := m.preview.View()
-
-	left := lipgloss.JoinVertical(lipgloss.Top, results, search)
-	main := lipgloss.JoinHorizontal(lipgloss.Top, left, preview)
-
-	hintText := "For basic help, press Ctrl-G."
-	if m.clipboardFlash {
-		hintText = "Copied to clipboard!"
-	}
-	hint := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hintStyle.Render(hintText))
-
-	return lipgloss.JoinVertical(
-		lipgloss.Top,
-		marginStyle.Render(main),
-		hint,
-	)
+	return lipgloss.JoinVertical(lipgloss.Top, content, m.statusBar.View())
 }
 
 type OptionTUIArgs struct {

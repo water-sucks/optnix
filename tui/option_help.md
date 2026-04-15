@@ -26,6 +26,8 @@ Press `<Tab>` to switch focus between the two windows.
 Press `<Enter>` to view the current value of a selected option, if available;
 this will open the **value view**.
 
+Press `Ctrl+Y` to copy the selected option name to the clipboard.
+
 Press `Ctrl+O` to open the scope select view.
 
 Press `<Shift+Tab>` to cycle to the next scope.
@@ -53,6 +55,8 @@ Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
 Displays the current value of the selected option (if it can be evaluated).
 
 Use the arrow keys or `h`, `j`, `k`, and `l` to scroll around.
+
+Press `Ctrl+Y` to copy the evaluated value to the clipboard.
 
 Press `<Esc>` or `q` to close this window.
 

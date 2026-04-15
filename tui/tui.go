@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"time"
 	"unicode"
 
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -49,6 +51,8 @@ type Model struct {
 	width  int
 	height int
 
+	clipboardFlash bool
+
 	search      SearchBarModel
 	results     ResultListModel
 	preview     PreviewModel
@@ -67,6 +71,9 @@ const (
 )
 
 type ChangeViewModeMsg ViewMode
+
+type CopiedToClipboardMsg struct{}
+type ClearClipboardFlashMsg struct{}
 
 type FocusArea int
 
@@ -161,6 +168,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
+	case CopiedToClipboardMsg:
+		m.clipboardFlash = true
+		return m, tea.Tick(2*time.Second, func(time.Time) tea.Msg {
+			return ClearClipboardFlashMsg{}
+		})
+
+	case ClearClipboardFlashMsg:
+		m.clipboardFlash = false
+		return m, nil
+
 	case ChangeViewModeMsg:
 		m.mode = ViewMode(msg)
 
@@ -234,6 +251,14 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeSelectScope)
+			}
+
+		case "ctrl+y":
+			if opt := m.results.GetSelectedOption(); opt != nil {
+				return m, func() tea.Msg {
+					clipboard.WriteAll(opt.Name)
+					return CopiedToClipboardMsg{}
+				}
 			}
 		}
 	case RunSearchMsg:
@@ -445,7 +470,11 @@ func (m Model) View() string {
 	left := lipgloss.JoinVertical(lipgloss.Top, results, search)
 	main := lipgloss.JoinHorizontal(lipgloss.Top, left, preview)
 
-	hint := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hintStyle.Render("For basic help, press Ctrl-G."))
+	hintText := "For basic help, press Ctrl-G."
+	if m.clipboardFlash {
+		hintText = "Copied to clipboard!"
+	}
+	hint := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hintStyle.Render(hintText))
 
 	return lipgloss.JoinVertical(
 		lipgloss.Top,

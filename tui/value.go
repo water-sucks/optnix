@@ -64,6 +64,10 @@ func (m EvalValueModel) Update(msg tea.Msg) (EvalValueModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeSearch)
 			}
+		case "ctrl+y":
+			if m.evaluated != "" && !m.loading {
+				return m, copyToClipboardCmd(m.evaluated)
+			}
 		}
 
 	case tea.WindowSizeMsg:

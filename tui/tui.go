@@ -6,6 +6,7 @@ import (
 	"slices"
 	"unicode"
 
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -30,10 +31,9 @@ var (
 			BorderBottom(false).
 			BorderLeft(false)
 
-	marginStyle = lipgloss.NewStyle().Margin(2, 2, 0, 2)
-	hintStyle   = lipgloss.NewStyle().
-			Foreground(lipgloss.ANSIColor(termenv.ANSIYellow)) // Soft gray
-
+	marginStyle    = lipgloss.NewStyle().Margin(2, 2, 0, 2)
+	hintStyle      = lipgloss.NewStyle().Foreground(ansiYellow)
+	errorHintStyle = lipgloss.NewStyle().Foreground(ansiRed).Bold(true)
 )
 
 type Model struct {
@@ -48,6 +48,8 @@ type Model struct {
 
 	width  int
 	height int
+
+	statusBar StatusBarModel
 
 	search      SearchBarModel
 	results     ResultListModel
@@ -67,6 +69,34 @@ const (
 )
 
 type ChangeViewModeMsg ViewMode
+
+type NotificationKind int
+
+const (
+	NotificationNormal NotificationKind = iota
+	NotificationError
+)
+
+type NotificationMsg struct {
+	Message string
+	Kind    NotificationKind
+}
+
+type ClearNotificationMsg struct {
+	ID int
+}
+
+func copyToClipboardCmd(value string) tea.Cmd {
+	return func() tea.Msg {
+		if err := clipboard.WriteAll(value); err != nil {
+			return NotificationMsg{
+				Message: "Copy failed: " + err.Error(),
+				Kind:    NotificationError,
+			}
+		}
+		return NotificationMsg{Message: "Copied to clipboard!"}
+	}
+}
 
 type FocusArea int
 
@@ -124,6 +154,7 @@ func NewModel(
 		selectScope: selectScope,
 		eval:        eval,
 		help:        help,
+		statusBar:   NewStatusBarModel(),
 	}, nil
 }
 
@@ -154,12 +185,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m = m.updateWindowSize(msg.Width, msg.Height)
 
+		m.statusBar = m.statusBar.SetWidth(msg.Width)
+
 		// Always forward resize events to components that need them.
-		m.eval, _ = m.eval.Update(msg)
-		m.help, _ = m.help.Update(msg)
-		m.selectScope, _ = m.selectScope.Update(msg)
+		// Shrink height by 1 so overlays leave room for the status bar.
+		overlayMsg := tea.WindowSizeMsg{Width: msg.Width, Height: msg.Height - 1}
+		m.eval, _ = m.eval.Update(overlayMsg)
+		m.help, _ = m.help.Update(overlayMsg)
+		m.selectScope, _ = m.selectScope.Update(overlayMsg)
 
 		return m, nil
+
+	case NotificationMsg, ClearNotificationMsg:
+		var cmd tea.Cmd
+		m.statusBar, cmd = m.statusBar.Update(msg)
+		return m, cmd
 
 	case ChangeViewModeMsg:
 		m.mode = ViewMode(msg)
@@ -234,6 +274,11 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 
 			return m, func() tea.Msg {
 				return ChangeViewModeMsg(ViewModeSelectScope)
+			}
+
+		case "ctrl+y":
+			if opt := m.results.GetSelectedOption(); opt != nil {
+				return m, copyToClipboardCmd(opt.Name)
 			}
 		}
 	case RunSearchMsg:
@@ -407,7 +452,7 @@ func (m Model) updateWindowSize(width, height int) Model {
 	m.height = height
 
 	usableWidth := width - 4   // 2 left + 2 right margins
-	usableHeight := height - 2 // 2 top margin
+	usableHeight := height - 3 // 2 top margin + 1 status bar
 
 	searchHeight := 3
 
@@ -429,29 +474,26 @@ func (m Model) updateWindowSize(width, height int) Model {
 }
 
 func (m Model) View() string {
+	var content string
+
 	switch m.mode {
 	case ViewModeSelectScope:
-		return marginStyle.Render(m.selectScope.View())
+		content = marginStyle.Render(m.selectScope.View())
 	case ViewModeEvalValue:
-		return marginStyle.Render(m.eval.View())
+		content = marginStyle.Render(m.eval.View())
 	case ViewModeHelp:
-		return marginStyle.Render(m.help.View())
+		content = marginStyle.Render(m.help.View())
+	default:
+		results := m.results.View()
+		search := m.search.View()
+		preview := m.preview.View()
+
+		left := lipgloss.JoinVertical(lipgloss.Top, results, search)
+		main := lipgloss.JoinHorizontal(lipgloss.Top, left, preview)
+		content = marginStyle.Render(main)
 	}
 
-	results := m.results.View()
-	search := m.search.View()
-	preview := m.preview.View()
-
-	left := lipgloss.JoinVertical(lipgloss.Top, results, search)
-	main := lipgloss.JoinHorizontal(lipgloss.Top, left, preview)
-
-	hint := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hintStyle.Render("For basic help, press Ctrl-G."))
-
-	return lipgloss.JoinVertical(
-		lipgloss.Top,
-		marginStyle.Render(main),
-		hint,
-	)
+	return lipgloss.JoinVertical(lipgloss.Top, content, m.statusBar.View())
 }
 
 type OptionTUIArgs struct {

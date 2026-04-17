@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -67,10 +66,7 @@ func (m EvalValueModel) Update(msg tea.Msg) (EvalValueModel, tea.Cmd) {
 			}
 		case "ctrl+y":
 			if m.evaluated != "" && !m.loading {
-				return m, func() tea.Msg {
-					clipboard.WriteAll(m.evaluated)
-					return CopiedToClipboardMsg{}
-				}
+				return m, copyToClipboardCmd(m.evaluated)
 			}
 		}
 

@@ -9,9 +9,9 @@ import (
 
 type StatusBarModel struct {
 	defaultText string
-	flashText   string
-	flashActive bool
-	flashID     int
+	text        string
+	kind        NotificationKind
+	id          int
 	width       int
 }
 
@@ -28,18 +28,17 @@ func (m StatusBarModel) SetWidth(width int) StatusBarModel {
 
 func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
 	switch msg := msg.(type) {
-	case CopiedToClipboardMsg:
-		m.flashActive = true
-		m.flashText = "Copied to clipboard!"
-		m.flashID++
-		id := m.flashID
+	case NotificationMsg:
+		m.text = msg.Message
+		m.kind = msg.Kind
+		m.id++
+		id := m.id
 		return m, tea.Tick(2*time.Second, func(time.Time) tea.Msg {
-			return ClearClipboardFlashMsg{id: id}
+			return ClearNotificationMsg{ID: id}
 		})
-	case ClearClipboardFlashMsg:
-		if msg.id == m.flashID {
-			m.flashActive = false
-			m.flashText = ""
+	case ClearNotificationMsg:
+		if msg.ID == m.id {
+			m.text = ""
 		}
 		return m, nil
 	}
@@ -47,9 +46,12 @@ func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
 }
 
 func (m StatusBarModel) View() string {
-	text := m.defaultText
-	if m.flashActive {
-		text = m.flashText
+	text, style := m.defaultText, hintStyle
+	if m.text != "" {
+		text = m.text
+		if m.kind == NotificationError {
+			style = errorHintStyle
+		}
 	}
-	return lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hintStyle.Render(text))
+	return lipgloss.PlaceHorizontal(m.width, lipgloss.Center, style.Render(text))
 }

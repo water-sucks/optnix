@@ -31,10 +31,9 @@ var (
 			BorderBottom(false).
 			BorderLeft(false)
 
-	marginStyle = lipgloss.NewStyle().Margin(2, 2, 0, 2)
-	hintStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.ANSIColor(termenv.ANSIYellow))
-
+	marginStyle    = lipgloss.NewStyle().Margin(2, 2, 0, 2)
+	hintStyle      = lipgloss.NewStyle().Foreground(ansiYellow)
+	errorHintStyle = lipgloss.NewStyle().Foreground(ansiRed).Bold(true)
 )
 
 type Model struct {
@@ -71,8 +70,33 @@ const (
 
 type ChangeViewModeMsg ViewMode
 
-type CopiedToClipboardMsg struct{}
-type ClearClipboardFlashMsg struct{ id int }
+type NotificationKind int
+
+const (
+	NotificationNormal NotificationKind = iota
+	NotificationError
+)
+
+type NotificationMsg struct {
+	Message string
+	Kind    NotificationKind
+}
+
+type ClearNotificationMsg struct {
+	ID int
+}
+
+func copyToClipboardCmd(value string) tea.Cmd {
+	return func() tea.Msg {
+		if err := clipboard.WriteAll(value); err != nil {
+			return NotificationMsg{
+				Message: "Copy failed: " + err.Error(),
+				Kind:    NotificationError,
+			}
+		}
+		return NotificationMsg{Message: "Copied to clipboard!"}
+	}
+}
 
 type FocusArea int
 
@@ -172,7 +196,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case CopiedToClipboardMsg, ClearClipboardFlashMsg:
+	case NotificationMsg, ClearNotificationMsg:
 		var cmd tea.Cmd
 		m.statusBar, cmd = m.statusBar.Update(msg)
 		return m, cmd
@@ -254,10 +278,7 @@ func (m Model) updateSearch(msg tea.Msg) (Model, tea.Cmd) {
 
 		case "ctrl+y":
 			if opt := m.results.GetSelectedOption(); opt != nil {
-				return m, func() tea.Msg {
-					clipboard.WriteAll(opt.Name)
-					return CopiedToClipboardMsg{}
-				}
+				return m, copyToClipboardCmd(opt.Name)
 			}
 		}
 	case RunSearchMsg:

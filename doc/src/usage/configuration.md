@@ -29,6 +29,10 @@ default_scope = ""
 # Formatter command to use for evaluated values, if available. Takes input on
 # stdin and outputs the formatted code back to stdout.
 formatter_cmd = "nixfmt"
+# Split ratio between the left pane (Available Options) and the right pane
+# (Option Preview). Value between 10 and 90 as a percentage, where 40 means
+# the left pane takes 40% of the width and the right pane takes 60%.
+split_ratio = 50
 
 # <name> is a placeholder for the name of the scope.
 # This is not a working scope! See the recipes page.

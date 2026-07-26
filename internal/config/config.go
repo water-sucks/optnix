@@ -18,6 +18,7 @@ type Config struct {
 	DebounceTime int64  `koanf:"debounce_time"`
 	DefaultScope string `koanf:"default_scope"`
 	FormatterCmd string `koanf:"formatter_cmd"`
+	SplitRatio   int64  `koanf:"split_ratio"`
 
 	Scopes map[string]Scope `koanf:"scopes"`
 
@@ -32,6 +33,7 @@ func NewConfig() *Config {
 		MinScore:     1,
 		DebounceTime: 25,
 		FormatterCmd: "nixfmt",
+		SplitRatio:   50,
 
 		Scopes: make(map[string]Scope),
 	}
@@ -108,6 +110,13 @@ func (e ValidationError) Error() string {
 }
 
 func (c *Config) Validate() error {
+	if c.SplitRatio < 10 || c.SplitRatio > 90 {
+		return ValidationError{
+			Msg:    fmt.Sprintf("split_ratio must be between 10 and 90, got %v", c.SplitRatio),
+			Origin: c.FieldOrigin("split_ratio"),
+		}
+	}
+
 	for s, v := range c.Scopes {
 		if v.OptionsListCmd == "" && v.OptionsListFile == "" {
 			return ValidationError{

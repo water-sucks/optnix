@@ -14,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/sahilm/fuzzy"
 	"github.com/spf13/cobra"
+	"github.com/yarlson/pin"
 	buildOpts "snare.dev/optnix/internal/build"
 	cmdUtils "snare.dev/optnix/internal/cmd/utils"
 	"snare.dev/optnix/internal/config"
@@ -21,7 +22,6 @@ import (
 	"snare.dev/optnix/internal/utils"
 	"snare.dev/optnix/option"
 	"snare.dev/optnix/tui"
-	"github.com/yarlson/pin"
 )
 
 const helpTemplate = `Usage:{{if .Runnable}}
@@ -349,6 +349,7 @@ func commandMain(cmd *cobra.Command, opts *CmdOptions) error {
 			MinScore:          cfg.MinScore,
 			DebounceTime:      cfg.DebounceTime,
 			InitialInput:      opts.OptionInput,
+			SplitRatio:        cfg.SplitRatio,
 			LogFileName:       "optnix",
 		})
 	}

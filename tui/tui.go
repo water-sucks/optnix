@@ -46,6 +46,8 @@ type Model struct {
 	filtered []fuzzy.Match
 	minScore int64
 
+	splitRatio int64
+
 	width  int
 	height int
 
@@ -111,6 +113,7 @@ func NewModel(
 	minScore int64,
 	debounceTime int64,
 	initialInput string,
+	splitRatio int64,
 ) (*Model, error) {
 	var scope *option.Scope
 	for _, s := range scopes {
@@ -147,6 +150,8 @@ func NewModel(
 		enableScopeSwitching: len(scopes) > 1,
 
 		minScore: minScore,
+
+		splitRatio: splitRatio,
 
 		results:     results,
 		preview:     preview,
@@ -456,18 +461,18 @@ func (m Model) updateWindowSize(width, height int) Model {
 
 	searchHeight := 3
 
-	halfWidth := usableWidth / 2
+	leftWidth := usableWidth * int(m.splitRatio) / 100
 
 	m.results = m.results.
-		SetWidth(halfWidth - 2). // 1 border each side
+		SetWidth(leftWidth - 2). // 1 border each side
 		SetHeight(usableHeight - searchHeight - 2)
 
 	m.search = m.search.
-		SetWidth(halfWidth - 2).
+		SetWidth(leftWidth - 2).
 		SetHeight(searchHeight)
 
 	m.preview = m.preview.
-		SetWidth(halfWidth - 2).
+		SetWidth(usableWidth - leftWidth - 2).
 		SetHeight(usableHeight - 2)
 
 	return m
@@ -502,6 +507,7 @@ type OptionTUIArgs struct {
 	MinScore          int64
 	DebounceTime      int64
 	InitialInput      string
+	SplitRatio        int64
 	LogFileName       string
 }
 
@@ -511,7 +517,7 @@ func OptionTUI(args OptionTUIArgs) error {
 		defer closeLogFile()
 	}
 
-	m, err := NewModel(args.Scopes, args.SelectedScopeName, args.MinScore, args.DebounceTime, args.InitialInput)
+	m, err := NewModel(args.Scopes, args.SelectedScopeName, args.MinScore, args.DebounceTime, args.InitialInput, args.SplitRatio)
 	if err != nil {
 		return err
 	}
